@@ -1,11 +1,12 @@
 #![allow(clippy::unnecessary_wraps)]
 
 use ggez::{
-    context::Has, event, glam::*, graphics::{self, Canvas, Color, Image, Rect}, mint::{Point2, Vector2}, Context, GameResult
+    context::Has, event, glam::*, graphics::{self, Canvas, Color, DrawParam, Drawable, Image, Rect}, mint::{Point2, Vector2}, Context, GameResult
 };
 
 use rpg::assets::Assets;
 use rpg::menu::MenuNode;
+use rpg::ui::Ui;
 
 use std::{char, collections::HashMap, env, fmt::format};
 use std::path;
@@ -18,6 +19,7 @@ struct MainState {
     friendly_party: Party,
     enemy_party: Party,
     game_state: GameState,
+    ui: Ui,
 }
 
 impl MainState {
@@ -54,7 +56,10 @@ impl MainState {
 
         let game_state = GameState::Battle;
 
-        Ok(MainState {assets, friendly_party: fp, enemy_party: ep, game_state})
+        let ui = Ui::new();
+
+
+        Ok(MainState {assets, friendly_party: fp, enemy_party: ep, game_state, ui})
     }
 }
 
@@ -91,6 +96,8 @@ impl event::EventHandler<ggez::GameError> for MainState {
                 // self.character.draw(&ctx, &mut canvas, &self.assets);
                 self.friendly_party.draw(ctx, &mut canvas, &self.assets);
                 self.enemy_party.draw(ctx, &mut canvas, &self.assets);
+
+                self.ui.draw(&mut canvas, DrawParam::default());
 
                 canvas.finish(ctx)?;
             },
@@ -236,37 +243,18 @@ impl Character {
     }
 }
 
-// pub fn main() -> GameResult {
+pub fn main() -> GameResult {
 
-    // let cb = ggez::ContextBuilder::new("super_simple", "ggez");
-    // let (mut ctx, event_loop) = cb.build()?;
+    let cb = ggez::ContextBuilder::new("super_simple", "ggez");
+    let (mut ctx, event_loop) = cb.build()?;
 
-    // if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
-    //     let mut path = path::PathBuf::from(manifest_dir);
-    //     path.push("resources");
-    //     ctx.fs.mount(&path, true);
-    // }
-
-    // let state = MainState::new(&mut ctx)?;
-
-    // event::run(ctx, event_loop, state)
-// }
-
-pub fn main() {
-
-    let mut root = MenuNode::new("root");
-    
-    let names_vec = vec!["Fight", "Guard", "Item", "Flee"];
-
-    for name in names_vec {
-        let mut ch = MenuNode::new(name);
-        let chch = MenuNode::new("i'm a child");
-        ch.add_child(chch);
-        root.add_child(ch);
+    if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
+        let mut path = path::PathBuf::from(manifest_dir);
+        path.push("resources");
+        ctx.fs.mount(&path, true);
     }
 
+    let state = MainState::new(&mut ctx)?;
 
-    let result = format!("{}", root);
-    print!("{}", result);
-
+    event::run(ctx, event_loop, state)
 }
