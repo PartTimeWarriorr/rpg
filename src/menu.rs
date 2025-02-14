@@ -1,19 +1,23 @@
 use core::fmt;
-use std::fmt::Formatter;
+use std::{cell::{Ref, RefCell}, fmt::Formatter, rc::{Rc, Weak}};
 
+pub type MenuNodeRef = Rc<RefCell<MenuNode>>;
 
+#[derive(Clone, Debug)]
 pub struct MenuNode {
-    name: String,
-    children: Vec<MenuNode>
+    pub name: String,
+    pub parent: Option<Weak<RefCell<MenuNode>>>,
+    pub children: Vec<MenuNodeRef>,
 }
 
 impl MenuNode {
 
-    pub fn new(name: &str) -> Self {
-        MenuNode { 
-            name: String::from(name),
-            children: Vec::new() 
-        }
+    pub fn new(name: &str, ) -> MenuNodeRef {
+        Rc::new(RefCell::new(MenuNode {
+            name: String::from(name), 
+            parent: None, 
+            children: vec![]
+        }))
     }
 
     fn format_node(&self, f: &mut Formatter, depth: i32) -> fmt::Result {
@@ -28,14 +32,15 @@ impl MenuNode {
             for _i in 0..=depth {
                 write!(f, "|  ")?;
             }
-            child.format_node(f, depth + 1)?;
+            child.borrow().format_node(f, depth + 1)?;
         }
 
         Ok(())
     }
 
-    pub fn add_child(&mut self, child: MenuNode) {
-        self.children.push(child); 
+    pub fn add_child(parent: &MenuNodeRef, child: MenuNodeRef) {
+        child.borrow_mut().parent = Some(Rc::downgrade(parent));
+        parent.borrow_mut().children.push(child);
     }
 
     pub fn set_name(&mut self, name: &str) {
@@ -53,23 +58,25 @@ impl fmt::Display for MenuNode {
 
 #[cfg(test)]
 mod tests {
+    use std::{fmt::format, result};
+
     use super::*;
 
     #[test]
     fn test_format_node() {
 
-        let mut root = MenuNode::new("root");
-        
+        let root = MenuNode::new("root");
+
         let names_vec = vec!["Fight", "Guard", "Item", "Flee"];
 
         for name in names_vec {
-            let mut ch = MenuNode::new(name);
+            let ch = MenuNode::new(name);
             let chch = MenuNode::new("i'm a child");
-            ch.add_child(chch);
-            root.add_child(ch);
+            MenuNode::add_child(&ch, chch);
+            MenuNode::add_child(&root, ch);
         }
 
-        let result = format!("{}", root);
+        let result = format!("{}", root.borrow());
 
         assert_eq!(result, "root ->\n\
                             |  Fight ->\n\

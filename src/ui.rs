@@ -1,26 +1,86 @@
 
+use std::{env::temp_dir, io::Cursor, thread::current};
+
 use ggez::{
-    graphics::{Rect, DrawParam, Drawable, Text, Canvas, Transform}, mint::{Point2, Vector2}
+    graphics::{Canvas, Color, DrawParam, Drawable, Rect, Text, TextFragment, Transform}, mint::{Point2, Vector2}
 };
 
-use crate::menu::MenuNode;
+use std::rc::Rc;
+
+use crate::menu::{self, MenuNode, MenuNodeRef};
 
 
 pub struct Ui {
     position: Point2<f32>,
     text_boxes: Vec<Text>,    
-    curr_menu: MenuNode,
+    curr_menu: MenuNodeRef,
+    selected_node: i32,
 }
 
 impl Ui {
-    pub fn new() -> Self {
+    pub fn new(root_menu_node: MenuNodeRef) -> Self {
 
         // TODO: load menu nodes into UI somehow
         Ui {
             position: Point2{x: 100.0, y: 100.0},
-            text_boxes: vec![Text::new("test"); 3],
-            curr_menu: MenuNode::new("oh"),
+            text_boxes: vec![Text::new("test"); 4],
+            curr_menu: root_menu_node,
+            selected_node: 0,
         }
+    }
+
+    pub fn load_menu(&mut self) {
+        // let mut menu_text: Vec<String> = vec![];
+        let mut new_boxes: Vec<Text> = vec![];
+
+        for (i, menu_node) in self.curr_menu.borrow().children.iter().enumerate() {
+
+            let mut text: Text = Default::default();
+
+            if i as i32 == self.selected_node {
+                text.add(TextFragment{text: menu_node.borrow().name.clone(), color: Some(Color::new(1.0, 1.0, 0.0, 1.0)), font: None, scale: None});
+            } else {
+                text.add(TextFragment{text: menu_node.borrow().name.clone(), color: Some(Color::new(1.0, 1.0, 1.0, 1.0)), font: None, scale: None});
+            } 
+
+            new_boxes.push(text);
+        }
+
+        self.text_boxes = new_boxes;
+    }
+
+    pub fn select_child(&mut self) {
+
+        if let Some(first_child) = self.curr_menu.clone().borrow().children.get(self.selected_node as usize) {
+            self.curr_menu = Rc::clone(first_child);
+            println!("{}", self.curr_menu.borrow().clone().name);
+            println!("{}", self.curr_menu.borrow().clone().parent.unwrap().upgrade().unwrap().borrow().clone().name);
+        } else {
+            println!("няма деца");
+        }        
+    }
+
+    pub fn go_back(&mut self) {
+
+        if let Some(parent) = &self.curr_menu.clone().borrow().parent {
+            self.curr_menu = parent.upgrade().unwrap();
+        } else {
+            println!("няма деца");
+        }        
+    }
+
+    pub fn change_selection(&mut self, diff: i32) {
+
+        self.selected_node += diff; 
+
+        if self.selected_node < 0 {
+            self.selected_node = self.text_boxes.len() as i32 - 1;
+        }
+
+        if self.selected_node > self.text_boxes.len() as i32 - 1 {
+            self.selected_node = 0;
+        }
+
     }
 
 }
