@@ -1,9 +1,4 @@
-
-
-use std::cmp::{
-    max,
-    min
-};
+use std::cmp::min;
 
 use ggez::{
     Context,
@@ -13,7 +8,7 @@ use ggez::{
         Color,
         Rect,
     },
-    mint::{Point2, Vector2},
+    mint::Point2,
 
 };
 
@@ -29,6 +24,7 @@ pub enum CharacterState {
 pub struct Stats {
     speed: i32,
 }
+// todo add health, attack, defense
 
 impl Stats {
     pub fn new(speed: i32) -> Self {
@@ -59,6 +55,9 @@ impl Party {
     pub fn update_bars(&mut self) {
         for c in &mut self.characters {
             c.action_bar.update(c.stats.speed);
+
+            // TODO! decouple action points and action bars, place action bars into UI struct
+            c.action_points += c.stats.speed;
         }
     }
 
@@ -74,11 +73,19 @@ impl Party {
 
 }
 
-struct Ability {
+#[derive(Clone)]
+pub struct Ability {
     name: String,
 }
 
-struct ActionBar {
+impl Ability {
+    pub fn new(name : String) -> Self {
+        Ability {
+            name
+        }
+    }
+}
+pub struct ActionBar {
     amount: i32,
     color: String,
 }
@@ -106,11 +113,6 @@ impl ActionBar {
 
     }
 
-    // pub fn draw(&self, canvas: &mut graphics::Canvas) {
-
-    //     // let rect = graphics::Mesh::new_rectangle(gfx, mode, bounds, color)
-    //     // canvas.draw()
-    // }
 }
 
 
@@ -122,18 +124,20 @@ pub struct Character {
     pub sprite: String,
     pub is_friendly: bool,
     pub stats: Stats,
+    pub action_points: i32
 }
 
 impl Character {
-    pub fn new(name: &str, sprite: &str, stats: Stats) -> Self {
+    pub fn new(name: &str, abilities: Vec<Ability>, sprite: &str, stats: Stats) -> Self {
         Character {
             name: String::from(name), 
             state: CharacterState::Default,
-            abilities: vec![],
+            abilities,
             action_bar: ActionBar::new(0, "Green"),
             sprite: String::from(sprite), 
             is_friendly: true,
             stats,
+            action_points: 0,
         }
     }
 
@@ -149,4 +153,8 @@ impl Character {
             self.action_bar.draw(ctx, canvas, Point2 { x: position.x, y: position.y + 20.0 });
         }
     }
+
+    // pub fn take_damage(&mut self)
+    // pub fn heal(&mut self)
+    // pub fn status_effect(&mut self)
 }

@@ -38,9 +38,9 @@ impl MenuNode {
         Ok(())
     }
 
-    pub fn add_child(parent: &MenuNodeRef, child: MenuNodeRef) {
+    pub fn add_child(parent: &MenuNodeRef, child: &MenuNodeRef) {
         child.borrow_mut().parent = Some(Rc::downgrade(parent));
-        parent.borrow_mut().children.push(child);
+        parent.borrow_mut().children.push(child.clone());
     }
 
     pub fn set_name(&mut self, name: &str) {
@@ -72,8 +72,8 @@ mod tests {
         for name in names_vec {
             let ch = MenuNode::new(name);
             let chch = MenuNode::new("i'm a child");
-            MenuNode::add_child(&ch, chch);
-            MenuNode::add_child(&root, ch);
+            MenuNode::add_child(&ch, &chch);
+            MenuNode::add_child(&root, &ch);
         }
 
         let result = format!("{}", root.borrow());

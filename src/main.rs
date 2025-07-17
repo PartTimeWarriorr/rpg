@@ -1,18 +1,23 @@
 #![allow(clippy::unnecessary_wraps)]
+#![allow(dead_code)]
+#![allow(unused_imports)]
+#![allow(unused_variables)]
 
 use ggez::{
-    context::Has, event, glam::*, graphics::{self, Canvas, Color, DrawParam, Drawable, Image, Rect}, input::{self, keyboard::{KeyCode, KeyInput}, }, mint::{Point2, Vector2}, Context, GameResult
+    event, graphics::{self, Canvas, Color, DrawParam, Drawable, Image, Rect}, input::{self, keyboard::{KeyCode, KeyInput}, }, mint::{Point2, Vector2},  Context, GameResult
 };
 
 use rpg::assets::Assets;
-use rpg::menu::MenuNode;
+use rpg::menu::{
+    MenuNode,
+    MenuNodeRef
+};
 use rpg::ui::Ui;
 use rpg::characters::*;
 
-use std::{char, collections::HashMap, env, fmt::format, process::Child};
+use std::env;
 use std::path;
 
-use std::cmp::{max, min};
 
 struct MainState {
     // character: Character,
@@ -21,33 +26,30 @@ struct MainState {
     enemy_party: Party,
     game_state: GameState,
     ui: Ui,
+    // background: Image
 }
+
+const FRIENDLY_PARTY_POSITION : Point2<f32> = Point2 { x : 100.0, y: 200.0}; 
+const ENEMY_PARTY_POSITION : Point2<f32> = Point2 { x : 400.0, y: 200.0}; 
 
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
         let assets = Assets::new(ctx)?;
-        // let circle = graphics::Mesh::new_circle(
-        //     ctx,
-        //     graphics::DrawMode::fill(),
-        //     vec2(0., 0.),
-        //     100.0,
-        //     2.0,
-        //     Color::WHITE,
-        // )?;
 
         let slow_stats = Stats::new(1);
         let fast_stats = Stats::new(2);
         let v_fast_stats = Stats::new(3);
 
+        let mut fp = Party::new(FRIENDLY_PARTY_POSITION);
+        let mut ep = Party::new(ENEMY_PARTY_POSITION);
 
-        let mut fp = Party::new(Point2 { x: 100.0, y: 100.0 });
-        let mut ep = Party::new(Point2 { x: 400.0, y: 100.0 });
+        let abilities = vec![Ability::new(String::from("a1")),Ability::new(String::from("a2"))];
 
-        let character = Character::new("hero", "char_1", fast_stats.clone());
-        let character_2 = Character::new("hero_2", "char_2", v_fast_stats.clone());
-        let character_3 = Character::new("hero_3", "char_3", slow_stats.clone());
-        let enemy = Character::new("orc", "enem_1", slow_stats.clone());
-        let enemy_2 = Character::new("orc_2", "enem_2", fast_stats.clone());
+        let character = Character::new("hero", abilities.clone(), "char_1", fast_stats.clone());
+        let character_2 = Character::new("hero_2", abilities.clone(), "char_2", v_fast_stats.clone());
+        let character_3 = Character::new("hero_3", abilities.clone(),"char_3", slow_stats.clone());
+        let enemy = Character::new("orc",abilities.clone(), "enem_1", slow_stats.clone());
+        let enemy_2 = Character::new("orc_2",abilities.clone(), "enem_2", fast_stats.clone());
 
         fp.add_member(character);
         fp.add_member(character_2);
@@ -58,23 +60,61 @@ impl MainState {
         let game_state = GameState::Battle;
 
         let root = MenuNode::new("root");
-        let names_vec = fp.characters.iter().map(|ch| ch.name.clone()).collect::<Vec<String>>();
-        let actions_vec = vec!["Fight", "Guard", "Item", "Flee"];
 
-        for name in names_vec {
-            let child = MenuNode::new(&name);
-            for action in &actions_vec {
-                let chch = MenuNode::new(&action);
-                MenuNode::add_child(&child, chch);
+        let character_nodes : Vec<MenuNodeRef> = fp.characters
+            .iter()
+            .map(|c| MenuNode::new(&c.name))
+            .collect();
+
+        let action_nodes : Vec<MenuNodeRef> = vec!["Fight", "Guard", "Item", "Flee"]
+            .iter()
+            .map(|a| MenuNode::new(*a))
+            .collect();
+
+        let ability_nodes : Vec<MenuNodeRef> = vec!["a1", "a2", "a3", "a4"]
+            .iter()
+            .map(|ab| MenuNode::new(*ab))
+            .collect();
+        
+        for character in &character_nodes {
+
+            for action in &action_nodes {
+
+                if action.borrow().name == "Fight" {
+                    for ability in &ability_nodes {
+                        MenuNode::add_child(&action, &ability);
+                    }
+                }
+
+                MenuNode::add_child(&character, &action);
             }
-            MenuNode::add_child(&root, child);
+
+            MenuNode::add_child(&root, &character);
         }
 
-        dbg!("{}", &root);
+        // let names_vec = fp.characters.iter().map(|ch| ch.name.clone()).collect::<Vec<String>>();
+        // let actions_vec = vec!["Fight", "Guard", "Item", "Flee"];
 
+        // for name in names_vec {
+        //     let child = MenuNode::new(&name);
+        //     for action in &actions_vec {
+        //         let chch = MenuNode::new(&action);
+        //         if *action == "Fight" {
+        //             for ability in &["a1", "a2", "a3", "a4"] {
+        //                 let chchch = MenuNode::new(&ability);
+        //                 MenuNode::add_child(&chch, &chchch);
+        //             }
+        //         }
+        //         MenuNode::add_child(&child, &chch);
+        //     }
+        //     MenuNode::add_child(&root, &child);
+        // }
+
+        // dbg!("{}", &root);
 
         let mut ui = Ui::new(root);
         ui.load_menu();
+
 
         Ok(MainState {assets, friendly_party: fp, enemy_party: ep, game_state, ui})
     }
@@ -90,6 +130,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
             GameState::Battle => {
                 self.friendly_party.update_bars();
                 self.enemy_party.update_bars();
+                
             },
             GameState::Overworld => {}
         }
@@ -104,10 +145,14 @@ impl event::EventHandler<ggez::GameError> for MainState {
         }
 
         if _ctx.keyboard.is_key_just_pressed(KeyCode::Z) {
+
+            // TODO! check if it's a character name and if the character is ready to act
+
             self.ui.select_child();
             self.ui.load_menu();
         }
 
+        // TODO! fix this breaking the game
         if _ctx.keyboard.is_key_just_pressed(KeyCode::X) {
             self.ui.go_back();
             self.ui.load_menu();
@@ -119,14 +164,19 @@ impl event::EventHandler<ggez::GameError> for MainState {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
+
+        let mut canvas =
+            graphics::Canvas::from_frame(ctx, graphics::Color::from([0.1, 0.2, 0.3, 1.0]));
+
+        let image = self.assets.character_images.get("battle_bg").unwrap(); 
+        image.draw(&mut canvas, DrawParam::default());
+
         match &self.game_state {
             GameState::Battle => {
 
-                let mut canvas =
-                    graphics::Canvas::from_frame(ctx, graphics::Color::from([0.1, 0.2, 0.3, 1.0]));
-
                 canvas.set_screen_coordinates(Rect::new(0.0, 0.0, 500.0, 500.0));
                 canvas.set_sampler(graphics::Sampler::nearest_clamp());
+
                 // canvas.draw(&self.circle, Vec2::new(self.pos_x, 380.0));
                 // canvas.draw(&self.rect, Vec2::new(0.,0.));
                 // self.character.draw(&mut canvas, &self.assets);
@@ -139,7 +189,9 @@ impl event::EventHandler<ggez::GameError> for MainState {
 
                 canvas.finish(ctx)?;
             },
-            GameState::Overworld => {}
+            GameState::Overworld => {
+
+            }
         }
 
         Ok(())

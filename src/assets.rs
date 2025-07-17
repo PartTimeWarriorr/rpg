@@ -1,6 +1,11 @@
+use std::fs::File;
+use std::io::BufReader;
 use std::{collections::HashMap};
 use std::{fs, path};
 use ggez::{graphics::Image, Context, GameResult};
+
+use serde::{Serialize, Deserialize};
+use serde_json::{Value};
 
 pub struct Assets {
     pub character_images: HashMap<String, Image>,
@@ -22,14 +27,40 @@ impl Assets {
             let image_name= String::from(path_name.strip_prefix("\\").unwrap().strip_suffix(".png").unwrap());
             map.insert(image_name, image);
         }
-        // let character_image = Image::from_path(ctx, "/char_1.png")?;
-        dbg!(&map.keys());
 
         Ok(
             Assets {
-                // character_image
                 character_images: map
             }
         )
     }
+}
+
+// #[derive(Serialize, Deserialize)]
+// struct Char {
+//     name : String,
+//     abilities : Vec<String>,
+//     sprite : String,
+//     stats : 
+// }
+
+pub fn load_char_config() {
+    let file = File::open("src/char_config.json").expect("Character config file not found.");
+    let reader = BufReader::new(file);
+
+    let v : Value = serde_json::from_reader(reader).expect("Bad JSON formatting");
+
+    dbg!(&v);
+
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_load_char_config() {
+        load_char_config();
+    }
+
 }

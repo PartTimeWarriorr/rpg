@@ -1,13 +1,12 @@
 
-use std::{env::temp_dir, io::Cursor, thread::current};
 
 use ggez::{
-    graphics::{Canvas, Color, DrawParam, Drawable, Rect, Text, TextFragment, Transform}, mint::{Point2, Vector2}
+    graphics::{Canvas, Color, DrawParam, Drawable, Rect, Text, TextFragment}, mint::Point2
 };
 
-use std::rc::Rc;
+use std::rc::{Rc, Weak};
 
-use crate::menu::{self, MenuNode, MenuNodeRef};
+use crate::menu::MenuNodeRef;
 
 
 pub struct Ui {
@@ -22,7 +21,7 @@ impl Ui {
 
         // TODO: load menu nodes into UI somehow
         Ui {
-            position: Point2{x: 100.0, y: 100.0},
+            position: Point2{x: 300.0, y: 400.0},
             text_boxes: vec![Text::new("test"); 4],
             curr_menu: root_menu_node,
             selected_node: 0,
@@ -53,8 +52,8 @@ impl Ui {
 
         if let Some(first_child) = self.curr_menu.clone().borrow().children.get(self.selected_node as usize) {
             self.curr_menu = Rc::clone(first_child);
-            println!("{}", self.curr_menu.borrow().clone().name);
-            println!("{}", self.curr_menu.borrow().clone().parent.unwrap().upgrade().unwrap().borrow().clone().name);
+            // println!("{}", self.curr_menu.borrow().clone().name);
+            // println!("{}", self.curr_menu.borrow().clone().parent.unwrap().upgrade().unwrap().borrow().clone().name);
         } else {
             println!("няма деца");
         }        
@@ -63,6 +62,7 @@ impl Ui {
     pub fn go_back(&mut self) {
 
         if let Some(parent) = &self.curr_menu.clone().borrow().parent {
+
             self.curr_menu = parent.upgrade().unwrap();
         } else {
             println!("няма деца");
@@ -88,7 +88,7 @@ impl Ui {
 impl Drawable for Ui {
     fn draw(&self, canvas: &mut Canvas, param: impl Into<DrawParam>) {
 
-        let mut curr_dest = Point2{x:0.0, y:0.0};
+        let mut curr_dest = self.position;
 
         for text_box in &self.text_boxes {
             curr_dest = Point2{x: curr_dest.x, y: curr_dest.y + 10.0};
