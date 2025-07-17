@@ -63,7 +63,17 @@ impl Ui {
 
         if let Some(parent) = &self.curr_menu.clone().borrow().parent {
 
-            self.curr_menu = parent.upgrade().unwrap();
+            // self.curr_menu = parent.upgrade().unwrap();
+            match parent.upgrade() {
+                Some(rc) => {
+                    println!("Going back to {}", rc.borrow().name);
+                    self.curr_menu = rc;
+                },
+                None => {
+                    println!("Parent pointer is dangling (dropped already)");
+                }
+            }
+            
         } else {
             println!("няма деца");
         }        

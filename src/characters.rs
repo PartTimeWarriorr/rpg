@@ -154,7 +154,13 @@ impl Character {
         }
     }
 
-    // pub fn take_damage(&mut self)
-    // pub fn heal(&mut self)
-    // pub fn status_effect(&mut self)
+    pub fn take_damage(&mut self) {
+        
+    }
+    pub fn heal(&mut self) {
+
+    }
+    pub fn status_effect(&mut self) {
+
+    }
 }
