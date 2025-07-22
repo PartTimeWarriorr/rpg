@@ -8,10 +8,7 @@ use ggez::{
 };
 
 use rpg::assets::Assets;
-use rpg::menu::{
-    MenuNode,
-    MenuNodeRef
-};
+use rpg::menu::*;
 use rpg::ui::Ui;
 use rpg::characters::*;
 
@@ -59,38 +56,38 @@ impl MainState {
 
         let game_state = GameState::Battle;
 
-        let root = MenuNode::new("root");
+        // let root = MenuNode::new("root");
 
-        let character_nodes : Vec<MenuNodeRef> = fp.characters
-            .iter()
-            .map(|c| MenuNode::new(&c.name))
-            .collect();
+        // let character_nodes : Vec<MenuNodeRef> = fp.characters
+        //     .iter()
+        //     .map(|c| MenuNode::new(&c.name))
+        //     .collect();
 
-        let action_nodes : Vec<MenuNodeRef> = vec!["Fight", "Guard", "Item", "Flee"]
-            .iter()
-            .map(|a| MenuNode::new(*a))
-            .collect();
+        // let action_nodes : Vec<MenuNodeRef> = vec!["Fight", "Guard", "Item", "Flee"]
+        //     .iter()
+        //     .map(|a| MenuNode::new(*a))
+        //     .collect();
 
-        let ability_nodes : Vec<MenuNodeRef> = vec!["a1", "a2", "a3", "a4"]
-            .iter()
-            .map(|ab| MenuNode::new(*ab))
-            .collect();
+        // let ability_nodes : Vec<MenuNodeRef> = vec!["a1", "a2", "a3", "a4"]
+        //     .iter()
+        //     .map(|ab| MenuNode::new(*ab))
+        //     .collect();
         
-        for character in &character_nodes {
+        // for character in &character_nodes {
 
-            for action in &action_nodes {
+        //     for action in &action_nodes {
 
-                if action.borrow().name == "Fight" {
-                    for ability in &ability_nodes {
-                        MenuNode::add_child(&action, &ability);
-                    }
-                }
+        //         if action.borrow().name == "Fight" {
+        //             for ability in &ability_nodes {
+        //                 MenuNode::add_child(&action, &ability);
+        //             }
+        //         }
 
-                MenuNode::add_child(&character, &action);
-            }
+        //         MenuNode::add_child(&character, &action);
+        //     }
 
-            MenuNode::add_child(&root, &character);
-        }
+        //     MenuNode::add_child(&root, &character);
+        // }
 
         // let names_vec = fp.characters.iter().map(|ch| ch.name.clone()).collect::<Vec<String>>();
         // let actions_vec = vec!["Fight", "Guard", "Item", "Flee"];
@@ -112,9 +109,26 @@ impl MainState {
 
         // dbg!("{}", &root);
 
-        let mut ui = Ui::new(root);
-        ui.load_menu();
+        // let mut ui = Ui::new(root);
+        // ui.load_menu();
 
+        let mut menu = Menu::new();
+
+        for hero_name in vec!["hero_1", "hero_2", "hero_3", "hero_4"] {
+            menu.insert_at("root", hero_name);
+
+            for action in vec!["Fight", "Guard", "Item", "Flee"] {
+                menu.insert_at(hero_name, action);
+
+            }
+
+            for ability in vec!["a1", "a2", "a3", "a4"] {
+                menu.insert_at_path(&["root", hero_name, "Fight"], ability);
+            }
+        }        
+
+        let mut ui = Ui::new(menu);
+        ui.load_menu();
 
         Ok(MainState {assets, friendly_party: fp, enemy_party: ep, game_state, ui})
     }
