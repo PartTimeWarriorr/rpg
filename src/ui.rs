@@ -4,8 +4,13 @@ use ggez::{
 use crate::{menu, menu::NodeHandle};
 use crate::menu::Menu;
 
+const DEFAULT_POSITION : Point2<f32> = Point2{x: 300.0, y : 400.0}; 
+
 const SELECTED_COLOR : Color = Color::new(1.0, 1.0, 0.0, 1.0);
 const DEFAULT_COLOR : Color = Color::new(1.0, 1.0, 1.0, 1.0);
+
+const BOX_PADDING : f32 = 10.0;
+const BOX_SIZE : f32 = 10.0;
 
 pub struct Ui {
     position: Point2<f32>,
@@ -18,8 +23,8 @@ pub struct Ui {
 impl Ui {
     pub fn new(menu: Menu) -> Self {
         Ui {
-            position: Point2{x: 300.0, y: 400.0},
-            text_boxes: vec![Text::new("test"); 4],
+            position: DEFAULT_POSITION,
+            text_boxes: vec![Text::new(""); 4],
             menu,
             curr_node: 0,
             selected_box: 0,
@@ -90,13 +95,13 @@ impl Drawable for Ui {
         let mut curr_dest = self.position;
 
         for text_box in &self.text_boxes {
-            curr_dest = Point2{x: curr_dest.x, y: curr_dest.y + 10.0};
+            curr_dest = Point2{x: curr_dest.x, y: curr_dest.y + BOX_PADDING};
             text_box.draw(canvas, DrawParam::default().dest(curr_dest));
         }
     }
 
     fn dimensions(&self, gfx: &impl ggez::context::Has<ggez::graphics::GraphicsContext>) -> Option<ggez::graphics::Rect> {
         
-        Some(Rect::new(10.0, 10.0, 10.0, 10.0))
+        Some(Rect::new(BOX_SIZE, BOX_SIZE, BOX_SIZE, BOX_SIZE))
     }
 }

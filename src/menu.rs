@@ -30,9 +30,6 @@ impl Node {
         }
     }
 
-    // pub fn get_children() -> Vec<NodeHandle> {
-        
-    // }
 }
 
 impl Menu {
