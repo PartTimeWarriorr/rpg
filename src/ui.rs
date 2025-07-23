@@ -54,8 +54,11 @@ impl Ui {
     }
 
     pub fn select(&mut self) {
-        if let Some(first_node) = self.menu.nodes[self.curr_node].children.get(self.selected_box as usize) {
-            self.curr_node = *first_node;
+        if let Some(new_root) = self.menu.nodes[self.curr_node].children.get(self.selected_box as usize) {
+            // Set new "root" to display its children
+            self.curr_node = *new_root;
+            // Set selected_box to the first node of the new menu
+            self.selected_box = 0;
         } else {
             println!("No node found!");
         }
