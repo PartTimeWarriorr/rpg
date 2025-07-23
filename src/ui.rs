@@ -53,13 +53,15 @@ impl Ui {
         self.text_boxes = new_boxes;
     }
 
-    pub fn select_child(&mut self) {
-        // TODO
-        self.curr_node = self.menu.nodes[self.curr_node].children[self.selected_box as usize];
+    pub fn select(&mut self) {
+        if let Some(first_node) = self.menu.nodes[self.curr_node].children.get(self.selected_box as usize) {
+            self.curr_node = *first_node;
+        } else {
+            println!("No node found!");
+        }
     }
 
     pub fn go_back(&mut self) {
-        // TODO
         self.curr_node = self.menu.nodes[self.curr_node].parent;
     }
 

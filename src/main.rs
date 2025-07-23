@@ -162,17 +162,14 @@ impl event::EventHandler<ggez::GameError> for MainState {
 
             // TODO! check if it's a character name and if the character is ready to act
 
-            self.ui.select_child();
+            self.ui.select();
             self.ui.load_menu();
         }
 
-        // TODO! fix this breaking the game
         if _ctx.keyboard.is_key_just_pressed(KeyCode::X) {
             self.ui.go_back();
             self.ui.load_menu();
         }
-
-
 
         Ok(())
     }
