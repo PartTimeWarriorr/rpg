@@ -52,15 +52,6 @@ impl Party {
         self.characters.push(new_character);
     }
 
-    // pub fn update_bars(&mut self) {
-    //     for c in &mut self.characters {
-    //         c.action_bar.update(c.stats.speed);
-
-    //         // TODO! decouple action points and action bars, place action bars into UI struct
-    //         c.action_points += c.stats.speed;
-    //     }
-    // }
-
     pub fn update_action_points(&mut self) {
         for ch in &mut self.characters {
             ch.update_action_points();
@@ -91,35 +82,6 @@ impl Ability {
         }
     }
 }
-// pub struct ActionBar {
-//     amount: i32,
-//     color: String,
-// }
-
-// impl ActionBar {
-//     fn new(amount: i32, color: &str) -> Self {
-
-//         ActionBar {
-//             amount,
-//             color: String::from(color),
-//         }
-//     }
-
-//     pub fn update(&mut self, update_speed: i32) {
-//         // self.amount += 10;
-//         // self.amount = min(self.amount + 10, 100);
-//         self.amount = min(self.amount + update_speed, 500);
-//     }
-
-//     pub fn draw(&self, ctx : &Context, canvas: &mut Canvas, position: Point2<f32>) {
-
-//         let rect = graphics::Mesh::new_rectangle(ctx, graphics::DrawMode::fill(), Rect { x: 0., y: 0., w: self.amount as f32 / 4.0, h: 10. }, Color::GREEN).unwrap();
-
-//         canvas.draw(&rect, position);
-
-//     }
-
-// }
 
 pub const MAX_ACTION_POINTS : u32 = 500;
 
@@ -127,7 +89,6 @@ pub struct Character {
     pub name: String,
     pub state: CharacterState,
     pub abilities: Vec<Ability>,
-    // pub action_bar: ActionBar,
     pub sprite: String,
     pub is_friendly: bool,
     pub stats: Stats,
@@ -140,7 +101,6 @@ impl Character {
             name: String::from(name), 
             state: CharacterState::Default,
             abilities,
-            // action_bar: ActionBar::new(0, "Green"),
             sprite: String::from(sprite), 
             is_friendly: true,
             stats,
@@ -157,10 +117,6 @@ impl Character {
 
 
         canvas.draw(assets.character_images.get(&self.sprite).unwrap(), position);
-        // if self.is_friendly
-        // {
-        //     self.action_bar.draw(ctx, canvas, Point2 { x: position.x, y: position.y + 20.0 });
-        // }
     }
 
     pub fn update_action_points(&mut self) {

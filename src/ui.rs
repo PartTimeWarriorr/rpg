@@ -142,22 +142,6 @@ impl ActionBar {
         self.dimensions = rect;
     }
 
-    // pub fn update_action_points(&mut self, action_points: u32) {
-    //     self.value = action_points;
-    // }
-
-    // pub fn update(&mut self, update_speed: i32) {
-    //     self.amount = min(self.amount + update_speed, 500);
-    // }
-
-    // pub fn draw(&self, ctx : &Context, canvas: &mut Canvas, position: Point2<f32>) {
-
-    //     let rect = Mesh::new_rectangle(ctx, DrawMode::fill(), Rect { x: 0., y: 0., w: self.amount as f32 / 4.0, h: 10. }, Color::GREEN).unwrap();
-
-    //     canvas.draw(&rect, position);
-
-    // }
-
 }
 
 

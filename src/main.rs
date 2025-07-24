@@ -57,62 +57,6 @@ impl MainState {
 
         let game_state = GameState::Battle;
 
-        // let root = MenuNode::new("root");
-
-        // let character_nodes : Vec<MenuNodeRef> = fp.characters
-        //     .iter()
-        //     .map(|c| MenuNode::new(&c.name))
-        //     .collect();
-
-        // let action_nodes : Vec<MenuNodeRef> = vec!["Fight", "Guard", "Item", "Flee"]
-        //     .iter()
-        //     .map(|a| MenuNode::new(*a))
-        //     .collect();
-
-        // let ability_nodes : Vec<MenuNodeRef> = vec!["a1", "a2", "a3", "a4"]
-        //     .iter()
-        //     .map(|ab| MenuNode::new(*ab))
-        //     .collect();
-        
-        // for character in &character_nodes {
-
-        //     for action in &action_nodes {
-
-        //         if action.borrow().name == "Fight" {
-        //             for ability in &ability_nodes {
-        //                 MenuNode::add_child(&action, &ability);
-        //             }
-        //         }
-
-        //         MenuNode::add_child(&character, &action);
-        //     }
-
-        //     MenuNode::add_child(&root, &character);
-        // }
-
-        // let names_vec = fp.characters.iter().map(|ch| ch.name.clone()).collect::<Vec<String>>();
-        // let actions_vec = vec!["Fight", "Guard", "Item", "Flee"];
-
-        // for name in names_vec {
-        //     let child = MenuNode::new(&name);
-        //     for action in &actions_vec {
-        //         let chch = MenuNode::new(&action);
-        //         if *action == "Fight" {
-        //             for ability in &["a1", "a2", "a3", "a4"] {
-        //                 let chchch = MenuNode::new(&ability);
-        //                 MenuNode::add_child(&chch, &chchch);
-        //             }
-        //         }
-        //         MenuNode::add_child(&child, &chch);
-        //     }
-        //     MenuNode::add_child(&root, &child);
-        // }
-
-        // dbg!("{}", &root);
-
-        // let mut ui = Ui::new(root);
-        // ui.load_menu();
-
         let mut menu = Menu::new();
 
         for hero_name in vec!["hero_1", "hero_2", "hero_3", "hero_4"] {
@@ -142,9 +86,6 @@ impl MainState {
 impl event::EventHandler<ggez::GameError> for MainState {
     fn update(&mut self, _ctx: &mut Context) -> GameResult {
 
-        // self.action_bar.update();
-        // self.character.action_bar.update();
-        
         match &self.game_state {
             GameState::Battle => {
                 
@@ -154,7 +95,6 @@ impl event::EventHandler<ggez::GameError> for MainState {
                     .iter_mut()
                     .zip(self.friendly_party.characters.iter().map(|ch| ch.action_points))
                     .for_each(|(bar, value)| bar.update(_ctx, value as f32, HERO_AP_COLOR));
-                // self.friendly_party.update_bars();
                 // self.enemy_party.update_bars();
                 
             },
@@ -200,16 +140,10 @@ impl event::EventHandler<ggez::GameError> for MainState {
                 canvas.set_screen_coordinates(Rect::new(0.0, 0.0, 500.0, 500.0));
                 canvas.set_sampler(graphics::Sampler::nearest_clamp());
 
-                // canvas.draw(&self.circle, Vec2::new(self.pos_x, 380.0));
-                // canvas.draw(&self.rect, Vec2::new(0.,0.));
-                // self.character.draw(&mut canvas, &self.assets);
-                // self.action_bar.draw(ctx, &mut canvas);
-                // self.character.draw(&ctx, &mut canvas, &self.assets);
                 self.friendly_party.draw(ctx, &mut canvas, &self.assets);
                 self.enemy_party.draw(ctx, &mut canvas, &self.assets);
 
                 self.ui.draw(&mut canvas, DrawParam::default());
-                // self.bars.action_bars.iter().for_each(|bar| bar.draw(&mut canvas, DrawParam::default()));
                 self.bars.draw_action_bars(&mut canvas);
 
                 canvas.finish(ctx)?;
