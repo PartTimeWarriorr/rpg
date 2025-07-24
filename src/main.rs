@@ -7,9 +7,9 @@ use ggez::{
     event, graphics::{self, Canvas, Color, DrawParam, Drawable, Image, Rect}, input::{self, keyboard::{KeyCode, KeyInput}, }, mint::{Point2, Vector2},  Context, GameResult
 };
 
-use rpg::assets::Assets;
+use rpg::{assets::Assets, ui};
 use rpg::menu::*;
-use rpg::ui::Ui;
+use rpg::ui::*;
 use rpg::characters::*;
 
 use std::env;
@@ -23,6 +23,7 @@ struct MainState {
     enemy_party: Party,
     game_state: GameState,
     ui: Ui,
+    bars: Bars,
     // background: Image
 }
 
@@ -33,9 +34,9 @@ impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
         let assets = Assets::new(ctx)?;
 
-        let slow_stats = Stats::new(1);
-        let fast_stats = Stats::new(2);
-        let v_fast_stats = Stats::new(3);
+        let slow_stats = Stats::new(1,1,1,1);
+        let fast_stats = Stats::new(2,2,2,2);
+        let v_fast_stats = Stats::new(3,3,3,3);
 
         let mut fp = Party::new(FRIENDLY_PARTY_POSITION);
         let mut ep = Party::new(ENEMY_PARTY_POSITION);
@@ -129,8 +130,12 @@ impl MainState {
 
         let mut ui = Ui::new(menu);
         ui.load_menu();
+        
+        let action_bars_vec = vec![ActionBar::new(ctx, ui::HERO_AP_COLOR); fp.characters.len()];
+        let bars = Bars::new(action_bars_vec);
 
-        Ok(MainState {assets, friendly_party: fp, enemy_party: ep, game_state, ui})
+
+        Ok(MainState {assets, friendly_party: fp, enemy_party: ep, game_state, ui, bars})
     }
 }
 
@@ -142,8 +147,15 @@ impl event::EventHandler<ggez::GameError> for MainState {
         
         match &self.game_state {
             GameState::Battle => {
-                self.friendly_party.update_bars();
-                self.enemy_party.update_bars();
+                
+                self.friendly_party.update_action_points();
+                self.bars
+                    .action_bars
+                    .iter_mut()
+                    .zip(self.friendly_party.characters.iter().map(|ch| ch.action_points))
+                    .for_each(|(bar, value)| bar.update(_ctx, value as f32, HERO_AP_COLOR));
+                // self.friendly_party.update_bars();
+                // self.enemy_party.update_bars();
                 
             },
             GameState::Overworld => {}
@@ -197,6 +209,8 @@ impl event::EventHandler<ggez::GameError> for MainState {
                 self.enemy_party.draw(ctx, &mut canvas, &self.assets);
 
                 self.ui.draw(&mut canvas, DrawParam::default());
+                // self.bars.action_bars.iter().for_each(|bar| bar.draw(&mut canvas, DrawParam::default()));
+                self.bars.draw_action_bars(&mut canvas);
 
                 canvas.finish(ctx)?;
             },

@@ -22,15 +22,15 @@ pub enum CharacterState {
 }
 #[derive(Clone, Copy)]
 pub struct Stats {
-    speed: i32,
+    health: u32,
+    attack: u32,
+    defense: u32,
+    speed: u32,
 }
-// todo add health, attack, defense
 
 impl Stats {
-    pub fn new(speed: i32) -> Self {
-        Stats {
-            speed
-        }
+    pub fn new(health: u32, attack: u32, defense: u32, speed: u32) -> Self {
+        Stats { health, attack, defense, speed }
     }
 }
 
@@ -52,12 +52,18 @@ impl Party {
         self.characters.push(new_character);
     }
 
-    pub fn update_bars(&mut self) {
-        for c in &mut self.characters {
-            c.action_bar.update(c.stats.speed);
+    // pub fn update_bars(&mut self) {
+    //     for c in &mut self.characters {
+    //         c.action_bar.update(c.stats.speed);
 
-            // TODO! decouple action points and action bars, place action bars into UI struct
-            c.action_points += c.stats.speed;
+    //         // TODO! decouple action points and action bars, place action bars into UI struct
+    //         c.action_points += c.stats.speed;
+    //     }
+    // }
+
+    pub fn update_action_points(&mut self) {
+        for ch in &mut self.characters {
+            ch.update_action_points();
         }
     }
 
@@ -85,46 +91,47 @@ impl Ability {
         }
     }
 }
-pub struct ActionBar {
-    amount: i32,
-    color: String,
-}
+// pub struct ActionBar {
+//     amount: i32,
+//     color: String,
+// }
 
-impl ActionBar {
-    fn new(amount: i32, color: &str) -> Self {
+// impl ActionBar {
+//     fn new(amount: i32, color: &str) -> Self {
 
-        ActionBar {
-            amount,
-            color: String::from(color),
-        }
-    }
+//         ActionBar {
+//             amount,
+//             color: String::from(color),
+//         }
+//     }
 
-    pub fn update(&mut self, update_speed: i32) {
-        // self.amount += 10;
-        // self.amount = min(self.amount + 10, 100);
-        self.amount = min(self.amount + update_speed, 500);
-    }
+//     pub fn update(&mut self, update_speed: i32) {
+//         // self.amount += 10;
+//         // self.amount = min(self.amount + 10, 100);
+//         self.amount = min(self.amount + update_speed, 500);
+//     }
 
-    pub fn draw(&self, ctx : &Context, canvas: &mut Canvas, position: Point2<f32>) {
+//     pub fn draw(&self, ctx : &Context, canvas: &mut Canvas, position: Point2<f32>) {
 
-        let rect = graphics::Mesh::new_rectangle(ctx, graphics::DrawMode::fill(), Rect { x: 0., y: 0., w: self.amount as f32 / 4.0, h: 10. }, Color::GREEN).unwrap();
+//         let rect = graphics::Mesh::new_rectangle(ctx, graphics::DrawMode::fill(), Rect { x: 0., y: 0., w: self.amount as f32 / 4.0, h: 10. }, Color::GREEN).unwrap();
 
-        canvas.draw(&rect, position);
+//         canvas.draw(&rect, position);
 
-    }
+//     }
 
-}
+// }
 
+pub const MAX_ACTION_POINTS : u32 = 500;
 
 pub struct Character {
     pub name: String,
     pub state: CharacterState,
     pub abilities: Vec<Ability>,
-    pub action_bar: ActionBar,
+    // pub action_bar: ActionBar,
     pub sprite: String,
     pub is_friendly: bool,
     pub stats: Stats,
-    pub action_points: i32
+    pub action_points: u32
 }
 
 impl Character {
@@ -133,7 +140,7 @@ impl Character {
             name: String::from(name), 
             state: CharacterState::Default,
             abilities,
-            action_bar: ActionBar::new(0, "Green"),
+            // action_bar: ActionBar::new(0, "Green"),
             sprite: String::from(sprite), 
             is_friendly: true,
             stats,
@@ -141,17 +148,23 @@ impl Character {
         }
     }
 
+    pub fn update(&mut self) {
+        self.update_action_points(); 
+        // health, mana, ... take_damage()??? 
+    }
+
     pub fn draw(&self,ctx : &Context, canvas: &mut graphics::Canvas, assets: &Assets, position: Point2<f32>) {
 
 
-        // canvas.draw(&assets.character_image, Vec2::new(self.pos.x, self.pos.y));
-        // println!("{:?}", assets.character_images.get(&String::from("cad.png")));
-        // canvas.draw(assets.character_images.get("cad").unwrap(), Vec2::new(self.pos.x, self.pos.y));
         canvas.draw(assets.character_images.get(&self.sprite).unwrap(), position);
-        if self.is_friendly
-        {
-            self.action_bar.draw(ctx, canvas, Point2 { x: position.x, y: position.y + 20.0 });
-        }
+        // if self.is_friendly
+        // {
+        //     self.action_bar.draw(ctx, canvas, Point2 { x: position.x, y: position.y + 20.0 });
+        // }
+    }
+
+    pub fn update_action_points(&mut self) {
+        self.action_points = min(self.action_points + self.stats.speed, MAX_ACTION_POINTS);
     }
 
     pub fn take_damage(&mut self) {
