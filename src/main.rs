@@ -12,19 +12,17 @@ use rpg::menu::*;
 use rpg::ui::*;
 use rpg::characters::*;
 
-use std::env;
+use std::{collections::HashMap, env, iter::Map};
 use std::path;
 
 
 struct MainState {
-    // character: Character,
     assets: Assets, 
     friendly_party: Party,
     enemy_party: Party,
     game_state: GameState,
     ui: Ui,
-    bars: Bars,
-    // background: Image
+    character_uis: HashMap<CharacterId, Bars>,
 }
 
 const FRIENDLY_PARTY_POSITION : Point2<f32> = Point2 { x : 100.0, y: 200.0}; 
@@ -43,11 +41,11 @@ impl MainState {
 
         let abilities = vec![Ability::new(String::from("a1")),Ability::new(String::from("a2"))];
 
-        let character = Character::new("hero", abilities.clone(), "char_1", fast_stats.clone());
-        let character_2 = Character::new("hero_2", abilities.clone(), "char_2", v_fast_stats.clone());
-        let character_3 = Character::new("hero_3", abilities.clone(),"char_3", slow_stats.clone());
-        let enemy = Character::new("orc",abilities.clone(), "enem_1", slow_stats.clone());
-        let enemy_2 = Character::new("orc_2",abilities.clone(), "enem_2", fast_stats.clone());
+        let character = Character::new(0, "hero", abilities.clone(), "char_1", fast_stats.clone());
+        let character_2 = Character::new(1, "hero_2", abilities.clone(), "char_2", v_fast_stats.clone());
+        let character_3 = Character::new(2, "hero_3", abilities.clone(),"char_3", slow_stats.clone());
+        let enemy = Character::new(3, "orc",abilities.clone(), "enem_1", slow_stats.clone());
+        let enemy_2 = Character::new(4, "orc_2",abilities.clone(), "enem_2", fast_stats.clone());
 
         fp.add_member(character);
         fp.add_member(character_2);
@@ -75,11 +73,13 @@ impl MainState {
         let mut ui = Ui::new(menu);
         ui.load_menu();
         
-        let action_bars_vec = vec![ActionBar::new(ctx, ui::HERO_AP_COLOR); fp.characters.len()];
-        let bars = Bars::new(action_bars_vec);
+        let character_uis : HashMap<CharacterId, Bars> = fp.characters
+            .iter()
+            .map(|ch| (ch.id, Bars::new(ctx)))
+            .collect();
 
 
-        Ok(MainState {assets, friendly_party: fp, enemy_party: ep, game_state, ui, bars})
+        Ok(MainState {assets, friendly_party: fp, enemy_party: ep, game_state, ui, character_uis})
     }
 }
 
@@ -90,11 +90,12 @@ impl event::EventHandler<ggez::GameError> for MainState {
             GameState::Battle => {
                 
                 self.friendly_party.update_action_points();
-                self.bars
-                    .action_bars
+                self.character_uis
                     .iter_mut()
-                    .zip(self.friendly_party.characters.iter().map(|ch| ch.action_points))
-                    .for_each(|(bar, value)| bar.update(_ctx, value as f32, HERO_AP_COLOR));
+                    .for_each(|(ch_id,bars)| 
+                        bars.action_bar.update(_ctx, self.friendly_party.get_member_by_id(*ch_id).action_points as f32, HERO_AP_COLOR));
+
+                // TODO: add enemy bars
                 // self.enemy_party.update_bars();
                 
             },
@@ -112,7 +113,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
 
         if _ctx.keyboard.is_key_just_pressed(KeyCode::Z) {
 
-            // TODO! check if it's a character name and if the character is ready to act
+            // TODO: check if it's a character name and if the character is ready to act
 
             self.ui.select();
             self.ui.load_menu();
@@ -144,7 +145,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
                 self.enemy_party.draw(ctx, &mut canvas, &self.assets);
 
                 self.ui.draw(&mut canvas, DrawParam::default());
-                self.bars.draw_action_bars(&mut canvas);
+                draw_character_uis(&mut canvas, &self.character_uis);
 
                 canvas.finish(ctx)?;
             },

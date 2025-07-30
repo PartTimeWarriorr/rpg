@@ -2,11 +2,12 @@ use ggez::{
     Context,
     graphics::{Canvas, Color, DrawParam, DrawMode, Drawable, Rect, Text, TextFragment, Mesh}, mint::Point2
 };
-use crate::{characters, menu::{self, NodeHandle}};
+use crate::{characters::{self, CharacterId}, menu::{self, NodeHandle}};
 use crate::menu::Menu;
-use std::cmp::min;
+use std::{cmp::min, collections::HashMap};
 
-const DEFAULT_POSITION : Point2<f32> = Point2{x: 300.0, y : 400.0}; 
+// const DEFAULT_UI_POSITION : Point2<f32> = Point2{x: 300.0, y : 400.0}; 
+const DEFAULT_UI_POSITION : Point2<f32> = Point2{x: 20.0, y : 350.0}; 
 
 const SELECTED_COLOR : Color = Color::new(1.0, 1.0, 0.0, 1.0);
 const DEFAULT_COLOR : Color = Color::new(1.0, 1.0, 1.0, 1.0);
@@ -25,7 +26,7 @@ pub struct Ui {
 impl Ui {
     pub fn new(menu: Menu) -> Self {
         Ui {
-            position: DEFAULT_POSITION,
+            position: DEFAULT_UI_POSITION,
             text_boxes: vec![Text::new(""); 4],
             menu,
             curr_node: 0,
@@ -111,15 +112,17 @@ impl Drawable for Ui {
 const BAR_WIDTH_SCALE : f32 = 5.0;
 const BAR_HEIGHT : f32 = 10.0;
 pub const HERO_AP_COLOR : Color = Color::GREEN;
+pub const HERO_HP_COLOR: Color = Color::RED;
+pub const HERO_MP_COLOR: Color = Color::BLUE;
 pub const ENEMY_AP_COLOR : Color = Color::YELLOW;
 
-#[derive(Clone)]
-pub struct ActionBar {
+#[derive(Clone, Debug)]
+pub struct Bar {
     mesh: Mesh,
     dimensions: Rect,
 }
 
-impl ActionBar {
+impl Bar {
 
     pub fn new(ctx: &mut Context, color: Color) -> Self {
         let width = characters::MAX_ACTION_POINTS as f32 / BAR_WIDTH_SCALE;
@@ -127,7 +130,7 @@ impl ActionBar {
         let rect = Rect{ x: 0., y:0., w: width, h: height };
         let mesh = Mesh::new_rectangle(ctx, DrawMode::fill(), rect, color).unwrap();
 
-        ActionBar { 
+        Bar { 
             mesh,
             dimensions: rect 
         }
@@ -145,7 +148,7 @@ impl ActionBar {
 }
 
 
-impl Drawable for ActionBar {
+impl Drawable for Bar {
 
     fn draw(&self, canvas: &mut Canvas, param: impl Into<DrawParam>) {
         canvas.draw(&self.mesh, param);
@@ -160,22 +163,38 @@ impl Drawable for ActionBar {
 const DEFAULT_BAR_POSITION : Point2<f32> = Point2{ x : 100., y: 350. };
 const BAR_PADDING : f32 = 50.0;
 
+#[derive(Debug)]
 pub struct Bars {
-    pub action_bars: Vec<ActionBar>
+    pub health_bar: Bar,
+    pub mana_bar: Bar,
+    pub action_bar: Bar,
 }
 
 impl Bars {
-    pub fn new(action_bars: Vec<ActionBar>) -> Self {
+    pub fn new(ctx: &mut Context) -> Self {
         Bars {
-            action_bars
+            health_bar: Bar::new(ctx, HERO_HP_COLOR),
+            mana_bar: Bar::new(ctx, HERO_MP_COLOR),
+            action_bar: Bar::new(ctx, HERO_AP_COLOR),
         }
     }
 
-    pub fn draw_action_bars(&self, canvas: &mut Canvas) {
-        for (i, bar) in self.action_bars.iter().enumerate() {
-            let offset = i as f32 * BAR_PADDING;
-            let dest = Point2{ x : DEFAULT_BAR_POSITION.x, y : DEFAULT_BAR_POSITION.y + offset };
-            bar.draw(canvas, DrawParam::default().dest(dest));
-        }
+    pub fn draw_bars(&self, canvas: &mut Canvas, padding: f32) {
+        let dest = Point2{ x: DEFAULT_BAR_POSITION.x, y: DEFAULT_BAR_POSITION.y + padding};
+        self.health_bar.draw(canvas, DrawParam::default().dest(dest));
+
+        let dest = Point2{ x: DEFAULT_BAR_POSITION.x, y: DEFAULT_BAR_POSITION.y + BAR_HEIGHT + padding};
+        self.mana_bar.draw(canvas, DrawParam::default().dest(dest));
+
+        let dest = Point2{ x: DEFAULT_BAR_POSITION.x, y: DEFAULT_BAR_POSITION.y + BAR_HEIGHT * 2.0 + padding};
+        self.action_bar.draw(canvas, DrawParam::default().dest(dest));
     }
+
+}
+
+pub fn draw_character_uis(canvas: &mut Canvas, character_uis: &HashMap<CharacterId, Bars>) {
+    character_uis
+        .values()
+        .enumerate()
+        .for_each(|(i, ui)| ui.draw_bars(canvas, 0.0 + i as f32 * BAR_PADDING));
 }

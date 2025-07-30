@@ -14,6 +14,7 @@ use ggez::{
 
 use crate::assets::Assets;
 
+#[derive(Clone)]
 pub enum CharacterState {
     Default, 
     Attacking,
@@ -68,6 +69,14 @@ impl Party {
         }
     }
 
+    pub fn get_member_by_id(&self, character_id: CharacterId) -> Character {
+        if let Some(character) = self.characters.iter().find(|c| c.id == character_id) {
+            character.clone()
+        } else {
+            panic!("No character with id {} found!", character_id);
+        }
+    }
+
 }
 
 #[derive(Clone)]
@@ -85,7 +94,11 @@ impl Ability {
 
 pub const MAX_ACTION_POINTS : u32 = 500;
 
+pub type CharacterId = u32;
+
+#[derive(Clone)]
 pub struct Character {
+    pub id: CharacterId,
     pub name: String,
     pub state: CharacterState,
     pub abilities: Vec<Ability>,
@@ -96,8 +109,9 @@ pub struct Character {
 }
 
 impl Character {
-    pub fn new(name: &str, abilities: Vec<Ability>, sprite: &str, stats: Stats) -> Self {
+    pub fn new(id: CharacterId, name: &str, abilities: Vec<Ability>, sprite: &str, stats: Stats) -> Self {
         Character {
+            id,
             name: String::from(name), 
             state: CharacterState::Default,
             abilities,
