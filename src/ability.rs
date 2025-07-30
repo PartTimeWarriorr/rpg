@@ -1,4 +1,4 @@
-
+use crate::characters::Character;
 
 struct StatusEffect {
     attack: i32,
@@ -16,12 +16,12 @@ enum AbilityType {
 struct Ability {
     name: String,
     ability_type: AbilityType,
-    power: i32,
+    power: u32,
     status_effect: StatusEffect,
 }
 
 impl Ability {
-    pub fn new(name: &str, ability_type: AbilityType, power: i32, status_effect: StatusEffect) -> Self {
+    pub fn new(name: &str, ability_type: AbilityType, power: u32, status_effect: StatusEffect) -> Self {
         Ability {
             name: String::from(name),
             ability_type,
@@ -30,11 +30,11 @@ impl Ability {
         }
     }
 
-    pub fn perform(&self, target: Character) {
-        match AbilityType {
-            Damage => target.take_damage(self.power),
-            Heal => target.heal(self.power),
-            Status => target.effect(self.status_effect),
+    pub fn perform(&self, target: &mut Character) {
+        match self.ability_type {
+            AbilityType::Damage => target.take_damage(self.power),
+            AbilityType::Heal => target.heal(self.power),
+            AbilityType::Status => target.status_effect(),
         }
     }
 }
