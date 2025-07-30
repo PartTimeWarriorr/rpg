@@ -109,6 +109,7 @@ impl Drawable for Ui {
     }
 }
 
+// TODO: Update bar width scale to match AP and HP/MP better and still give them the same length
 const BAR_WIDTH_SCALE : f32 = 5.0;
 const BAR_HEIGHT : f32 = 10.0;
 pub const HERO_AP_COLOR : Color = Color::GREEN;

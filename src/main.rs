@@ -32,9 +32,9 @@ impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
         let assets = Assets::new(ctx)?;
 
-        let slow_stats = Stats::new(1,1,1,1);
-        let fast_stats = Stats::new(2,2,2,2);
-        let v_fast_stats = Stats::new(3,3,3,3);
+        let slow_stats = Stats::new(500,1,1,1);
+        let fast_stats = Stats::new(500,2,2,2);
+        let v_fast_stats = Stats::new(500,3,3,3);
 
         let mut fp = Party::new(FRIENDLY_PARTY_POSITION);
         let mut ep = Party::new(ENEMY_PARTY_POSITION);
@@ -92,8 +92,11 @@ impl event::EventHandler<ggez::GameError> for MainState {
                 self.friendly_party.update_action_points();
                 self.character_uis
                     .iter_mut()
-                    .for_each(|(ch_id,bars)| 
-                        bars.action_bar.update(_ctx, self.friendly_party.get_member_by_id(*ch_id).action_points as f32, HERO_AP_COLOR));
+                    .for_each(|(ch_id,bars)| {
+                        bars.health_bar.update(_ctx, self.friendly_party.get_member_by_id(*ch_id).health as f32, HERO_HP_COLOR);
+                        bars.mana_bar.update(_ctx, self.friendly_party.get_member_by_id(*ch_id).stats.defense as f32, HERO_MP_COLOR);
+                        bars.action_bar.update(_ctx, self.friendly_party.get_member_by_id(*ch_id).action_points as f32, HERO_AP_COLOR);
+                    });
 
                 // TODO: add enemy bars
                 // self.enemy_party.update_bars();
@@ -122,6 +125,14 @@ impl event::EventHandler<ggez::GameError> for MainState {
         if _ctx.keyboard.is_key_just_pressed(KeyCode::X) {
             self.ui.go_back();
             self.ui.load_menu();
+        }
+
+        if _ctx.keyboard.is_key_just_pressed(KeyCode::D) {
+            self.friendly_party.characters.get_mut(0).unwrap().take_damage(10);
+        }
+
+        if _ctx.keyboard.is_key_just_pressed(KeyCode::H) {
+            self.friendly_party.characters.get_mut(0).unwrap().heal(10);
         }
 
         Ok(())

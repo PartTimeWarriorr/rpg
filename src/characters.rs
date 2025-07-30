@@ -1,4 +1,7 @@
-use std::cmp::min;
+use std::cmp::{
+    min,
+    max,
+};
 
 use ggez::{
     Context,
@@ -23,15 +26,15 @@ pub enum CharacterState {
 }
 #[derive(Clone, Copy)]
 pub struct Stats {
-    health: u32,
+    max_health: u32,
     attack: u32,
-    defense: u32,
+    pub defense: u32,
     speed: u32,
 }
 
 impl Stats {
-    pub fn new(health: u32, attack: u32, defense: u32, speed: u32) -> Self {
-        Stats { health, attack, defense, speed }
+    pub fn new(max_health: u32, attack: u32, defense: u32, speed: u32) -> Self {
+        Stats { max_health, attack, defense, speed }
     }
 }
 
@@ -105,7 +108,8 @@ pub struct Character {
     pub sprite: String,
     pub is_friendly: bool,
     pub stats: Stats,
-    pub action_points: u32
+    pub action_points: u32,
+    pub health: u32,
 }
 
 impl Character {
@@ -119,6 +123,7 @@ impl Character {
             is_friendly: true,
             stats,
             action_points: 0,
+            health: stats.max_health,
         }
     }
 
@@ -137,11 +142,11 @@ impl Character {
         self.action_points = min(self.action_points + self.stats.speed, MAX_ACTION_POINTS);
     }
 
-    pub fn take_damage(&mut self) {
-        
+    pub fn take_damage(&mut self, damage: u32) {
+        self.health = self.health.saturating_sub(damage);
     }
-    pub fn heal(&mut self) {
-
+    pub fn heal(&mut self, heal_amount: u32) {
+        self.health = min(self.health + heal_amount, self.stats.max_health);
     }
     pub fn status_effect(&mut self) {
 
