@@ -27,7 +27,7 @@ pub enum CharacterState {
 #[derive(Clone, Copy)]
 pub struct Stats {
     max_health: u32,
-    attack: u32,
+    pub attack: u32,
     pub defense: u32,
     speed: u32,
 }
@@ -140,6 +140,10 @@ impl Character {
 
 
         canvas.draw(assets.character_images.get(&self.sprite).unwrap(), position);
+    }
+
+    pub fn action_points_charged(&self) -> bool {
+        self.action_points == MAX_ACTION_POINTS
     }
 
     pub fn update_action_points(&mut self) {

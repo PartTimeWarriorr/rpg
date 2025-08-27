@@ -23,6 +23,12 @@ struct Ability {
 }
 
 impl Ability {
+
+    // pub fn new(name: &str) -> Self {
+    //     Ability {
+
+    //     }
+    // }
     pub fn new(name: &str, ability_type: AbilityType, power: u32, status_effect: StatusEffect) -> Self {
         Ability {
             name: String::from(name),

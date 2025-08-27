@@ -8,10 +8,11 @@ pub enum ActionType {
     Flee
 }
 
+#[derive(Debug)]
 pub struct Action {
     action_type: ActionType,
-    actor: CharacterId,
-    target: CharacterId,
+    actor: String,
+    target: Option<String>,
     ability: Ability
 }
 
@@ -22,6 +23,29 @@ impl Action {
 
     pub fn new() -> PendingAction {
         PendingAction::new()
+    }
+
+    pub fn resolve(self, friendly_party: &mut Party, enemy_party: &mut Party) {
+        let actor_ch = friendly_party.characters.iter_mut().find(|ch| ch.name == self.actor).unwrap();
+
+        match self.action_type {
+            ActionType::Fight => {
+                let target_ch = enemy_party.characters.iter_mut().find(|ch| ch.name == self.target.clone().unwrap()).unwrap();
+                let power = actor_ch.stats.attack;
+                target_ch.take_damage(power);
+            },
+            ActionType::Guard => {
+                actor_ch.stats.defense = actor_ch.stats.defense + 10;
+            },
+            ActionType::Item => {
+                // use_item
+                println!("Using item now");
+            },
+            ActionType::Flee => {
+                // flee
+                println!("Fleeing now");
+            }
+        }
     }
 
 }
@@ -56,9 +80,19 @@ impl PendingAction {
         self
     }
 
-    // pub fn build(&self) -> Action {
-        // Action { action_type: self.action_type.unwrap(), actor: self.actor.unwrap(), target: self.target.unwrap(), ability: self.ability }
-    // }
+    pub fn build(&mut self) -> Action {
+        Action {
+            action_type: self.action_type.take().unwrap(),
+            actor: self.actor.take().unwrap(),
+            target: if let Some(t) = self.target.take() {
+                Some(t)
+            } else {
+                None
+            },
+            ability: Ability::new(String::from("s"))
+        } 
+        // Action { action_type: self.action_type.unwrap(), actor: self.actor.unwrap(), target: self.target.unwrap(), ability: Ability::new(String::from("s")) }
+    }
 }
 
 // pub fn create_new_action(actor: CharacterId, target: CharacterId, ability: Ability) {
