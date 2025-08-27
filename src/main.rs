@@ -7,7 +7,7 @@ use ggez::{
     event, graphics::{self, Canvas, Color, DrawParam, Drawable, Image, Rect}, input::{self, keyboard::{KeyCode, KeyInput}, }, mint::{Point2, Vector2},  Context, GameResult
 };
 
-use rpg::{assets::Assets, ui};
+use rpg::{action::PendingAction, assets::Assets, ui};
 use rpg::menu::*;
 use rpg::ui::*;
 use rpg::characters::*;
@@ -23,6 +23,9 @@ struct MainState {
     game_state: GameState,
     ui: Ui,
     character_uis: HashMap<CharacterId, Bars>,
+    current_action: PendingAction,
+    player_abilities: Vec<String>,
+    character_names: Vec<String>,
 }
 
 const FRIENDLY_PARTY_POSITION : Point2<f32> = Point2 { x : 100.0, y: 200.0}; 
@@ -47,28 +50,53 @@ impl MainState {
         let enemy = Character::new(3, "orc",abilities.clone(), "enem_1", slow_stats.clone());
         let enemy_2 = Character::new(4, "orc_2",abilities.clone(), "enem_2", fast_stats.clone());
 
+
         fp.add_member(character);
         fp.add_member(character_2);
         fp.add_member(character_3);
         ep.add_member(enemy);
         ep.add_member(enemy_2);
 
+        let player_abilities = fp.characters
+            .iter()
+            .flat_map(|ch| ch.abilities.iter().map(|ab| ab.name.clone()))
+            .collect();
+
+        let character_names = fp.characters
+            .iter()
+            .chain(&ep.characters)
+            .map(|ch| ch.name.clone())
+            .collect::<Vec<String>>();
+
         let game_state = GameState::Battle;
 
         let mut menu = Menu::new();
 
-        for hero_name in vec!["hero_1", "hero_2", "hero_3", "hero_4"] {
-            menu.insert_at("root", hero_name);
+        for hero_name in vec!["hero", "hero_2", "hero_3"] {
+            // menu.insert_at("root", hero_name);
+            menu.insert_at_path(&["root"], hero_name);
 
             for action in vec!["Fight", "Guard", "Item", "Flee"] {
-                menu.insert_at(hero_name, action);
-
+                // menu.insert_at(hero_name, action);
+                menu.insert_at_path(&["root", hero_name], action);
             }
 
-            for ability in vec!["a1", "a2", "a3", "a4"] {
+            // TODO: Ewwwwww
+            for ch_name in &character_names {
+                menu.insert_at_path(&["root", hero_name, "Item"], &ch_name);
+            }
+
+            for ability in vec!["a1", "a2"] {
                 menu.insert_at_path(&["root", hero_name, "Fight"], ability);
+
+                // TODO: Ewwwwww
+                for ch_name in &character_names {
+                    menu.insert_at_path(&["root", hero_name, "Fight", ability], &ch_name);
+                }
             }
         }        
+
+        dbg!(&menu);
 
         let mut ui = Ui::new(menu);
         ui.load_menu();
@@ -78,8 +106,14 @@ impl MainState {
             .map(|ch| (ch.id, Bars::new(ctx)))
             .collect();
 
+        let current_action = PendingAction::new();
 
-        Ok(MainState {assets, friendly_party: fp, enemy_party: ep, game_state, ui, character_uis})
+
+        dbg!(&character_names);
+
+        // dbg!(&player_abilities);
+
+        Ok(MainState {assets, friendly_party: fp, enemy_party: ep, game_state, ui, character_uis, current_action, player_abilities, character_names})
     }
 }
 
@@ -116,24 +150,92 @@ impl event::EventHandler<ggez::GameError> for MainState {
 
         if _ctx.keyboard.is_key_just_pressed(KeyCode::Z) {
 
-            // TODO: check if it's a character name and if the character is ready to act
-
             self.ui.select();
             self.ui.load_menu();
+
+            // TODO: check if it's a character name and if the character is ready to act
+            let curr_selection : String = self.ui.get_curr_data();
+
+            match self.ui.menu_state {
+                MenuState::ChooseActor => {
+                    if self.friendly_party.is_character_name(&curr_selection) {
+                        self.current_action.actor(curr_selection);
+                        self.ui.menu_state = MenuState::ChooseActionType;
+                    } 
+                },
+                MenuState::ChooseActionType => {
+                    if curr_selection == "Fight" {
+                        self.current_action.action_type(rpg::action::ActionType::Fight);
+                        self.ui.menu_state = MenuState::ChooseAbility;
+                    } else if curr_selection == "Guard" {
+                        self.current_action.action_type(rpg::action::ActionType::Guard);
+                        self.ui.go_back();
+                        self.ui.go_back();
+                        self.ui.load_menu();
+                        self.ui.menu_state = MenuState::ChooseActor;
+                    } else if curr_selection == "Item" {
+                        self.current_action.action_type(rpg::action::ActionType::Item);
+                        self.ui.menu_state = MenuState::ChooseTarget;
+                    } else if curr_selection == "Flee" {
+                        self.current_action.action_type(rpg::action::ActionType::Flee);
+                        self.ui.go_back();
+                        self.ui.go_back();
+                        self.ui.load_menu();
+                        self.ui.menu_state = MenuState::ChooseActor;
+                    }
+
+                },
+                MenuState::ChooseAbility => {
+                    if self.player_abilities.iter().any(|ab_name| *ab_name == curr_selection) {
+                        self.current_action.ability(curr_selection);
+                    }
+                    self.ui.menu_state = MenuState::ChooseTarget;
+                },
+                MenuState::ChooseTarget => {
+                    if self.character_names.iter().any(|ch_name| *ch_name == curr_selection) {
+                        self.current_action.target(curr_selection);
+                    }
+                    self.ui.go_back();
+                    self.ui.go_back();
+                    self.ui.go_back();
+                    self.ui.load_menu();
+                    println!("Complete action: {:?}", self.current_action);
+                    self.current_action = PendingAction::new();
+                    self.ui.menu_state = MenuState::ChooseActor;
+                }
+            }
+
+                        // dbg!(&self.current_action);
+                        // dbg!(&self.ui.menu_state);
         }
 
         if _ctx.keyboard.is_key_just_pressed(KeyCode::X) {
             self.ui.go_back();
             self.ui.load_menu();
+
+            match self.ui.menu_state {
+                MenuState::ChooseTarget => {
+                    self.ui.menu_state = MenuState::ChooseAbility;
+                }
+                MenuState::ChooseAbility => {
+                    self.ui.menu_state = MenuState::ChooseActionType;
+                },
+                MenuState::ChooseActionType => {
+                    self.ui.menu_state = MenuState::ChooseActor;
+                },
+                MenuState::ChooseActor => {},
+            }
+                        dbg!(&self.current_action);
+                        dbg!(&self.ui.menu_state);
         }
 
-        if _ctx.keyboard.is_key_just_pressed(KeyCode::D) {
-            self.friendly_party.characters.get_mut(0).unwrap().take_damage(10);
-        }
+        // if _ctx.keyboard.is_key_just_pressed(KeyCode::D) {
+        //     self.friendly_party.characters.get_mut(0).unwrap().take_damage(10);
+        // }
 
-        if _ctx.keyboard.is_key_just_pressed(KeyCode::H) {
-            self.friendly_party.characters.get_mut(0).unwrap().heal(10);
-        }
+        // if _ctx.keyboard.is_key_just_pressed(KeyCode::H) {
+        //     self.friendly_party.characters.get_mut(0).unwrap().heal(10);
+        // }
 
         Ok(())
     }
@@ -161,7 +263,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
                 canvas.finish(ctx)?;
             },
             GameState::Overworld => {
-
+                canvas.finish(ctx)?;
             }
         }
 

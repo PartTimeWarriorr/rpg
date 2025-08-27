@@ -2,9 +2,10 @@ use ggez::{
     Context,
     graphics::{Canvas, Color, DrawParam, DrawMode, Drawable, Rect, Text, TextFragment, Mesh}, mint::Point2
 };
-use crate::{characters::{self, CharacterId}, menu::{self, NodeHandle}};
+use crate::{characters::{self, Ability, CharacterId}, menu::{self, NodeHandle}};
 use crate::menu::Menu;
-use std::{cmp::min, collections::HashMap};
+use std::{cmp::min, collections::HashMap, sync::Arc};
+use crate::action::*;
 
 // const DEFAULT_UI_POSITION : Point2<f32> = Point2{x: 300.0, y : 400.0}; 
 const DEFAULT_UI_POSITION : Point2<f32> = Point2{x: 20.0, y : 350.0}; 
@@ -15,11 +16,21 @@ const DEFAULT_COLOR : Color = Color::new(1.0, 1.0, 1.0, 1.0);
 const BOX_PADDING : f32 = 10.0;
 const BOX_SIZE : f32 = 10.0;
 
+#[derive(Debug)]
+pub enum MenuState {
+    ChooseActor,
+    ChooseActionType,
+    ChooseAbility,
+    ChooseTarget,
+}
+
 pub struct Ui {
     position: Point2<f32>,
     text_boxes: Vec<Text>,    
-    menu: Menu,
-    curr_node: NodeHandle,
+    pub menu: Menu,
+    pub menu_state: MenuState,
+    pub curr_node: NodeHandle,
+    pub curr_action: Option<Action>,
     selected_box: i32,
 }
 
@@ -29,7 +40,9 @@ impl Ui {
             position: DEFAULT_UI_POSITION,
             text_boxes: vec![Text::new(""); 4],
             menu,
+            menu_state: MenuState::ChooseActor,
             curr_node: 0,
+            curr_action: None,
             selected_box: 0,
         }
     }
@@ -88,6 +101,10 @@ impl Ui {
             self.selected_box = 0;
         }
 
+    }
+
+    pub fn get_curr_data(&self) -> String {
+        return self.menu.nodes[self.curr_node].data.clone();
     }
 
 }

@@ -15,7 +15,7 @@ use ggez::{
 
 };
 
-use crate::assets::Assets;
+use crate::{assets::Assets, characters};
 
 #[derive(Clone)]
 pub enum CharacterState {
@@ -80,11 +80,15 @@ impl Party {
         }
     }
 
+    pub fn is_character_name(&self, name: &String) -> bool {
+        self.characters.iter().any(|ch| ch.name == *name)
+    }
+
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Ability {
-    name: String,
+    pub name: String,
 }
 
 impl Ability {
@@ -149,6 +153,26 @@ impl Character {
         self.health = min(self.health + heal_amount, self.stats.max_health);
     }
     pub fn status_effect(&mut self) {
+
+    }
+
+    pub fn use_ability()
+    {
+
+    }
+
+    pub fn guard()
+    {
+
+    }
+
+    pub fn use_item()
+    {
+
+    }
+
+    pub fn flee()
+    {
 
     }
 }

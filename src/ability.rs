@@ -1,18 +1,20 @@
 use crate::characters::Character;
 
+#[derive(Debug)]
 struct StatusEffect {
     attack: i32,
     defense: i32,
     speed: i32,
 }
 
-
+#[derive(Debug)]
 enum AbilityType {
     Damage,
     Heal,
     Status
 }
 
+#[derive(Debug)]
 struct Ability {
     name: String,
     ability_type: AbilityType,
