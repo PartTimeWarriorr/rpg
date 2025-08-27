@@ -86,18 +86,18 @@ impl Party {
 
 }
 
-#[derive(Clone, Debug)]
-pub struct Ability {
-    pub name: String,
-}
+// #[derive(Clone, Debug)]
+// pub struct Ability {
+//     pub name: String,
+// }
 
-impl Ability {
-    pub fn new(name : String) -> Self {
-        Ability {
-            name
-        }
-    }
-}
+// impl Ability {
+//     pub fn new(name : String) -> Self {
+//         Ability {
+//             name
+//         }
+//     }
+// }
 
 pub const MAX_ACTION_POINTS : u32 = 500;
 
@@ -108,7 +108,8 @@ pub struct Character {
     pub id: CharacterId,
     pub name: String,
     pub state: CharacterState,
-    pub abilities: Vec<Ability>,
+    // pub abilities: Vec<Ability>,
+    pub abilities: Vec<String>,
     pub sprite: String,
     pub is_friendly: bool,
     pub stats: Stats,
@@ -117,7 +118,7 @@ pub struct Character {
 }
 
 impl Character {
-    pub fn new(id: CharacterId, name: &str, abilities: Vec<Ability>, sprite: &str, stats: Stats) -> Self {
+    pub fn new(id: CharacterId, name: &str, abilities: Vec<String>, sprite: &str, stats: Stats) -> Self {
         Character {
             id,
             name: String::from(name), 

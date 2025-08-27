@@ -1,0 +1,22 @@
+[
+    {
+        "name" : "Fireball",
+        "ability_type" : "Damage",
+        "power" : 100
+    },
+    {
+        "name" : "Cleave",
+        "ability_type" : "Damage",
+        "power" : 80
+    },
+    {
+        "name" : "Epic Buff",
+        "ability_type" : "Status",
+        "power" : 10,
+        "status_effect" : {
+            "attack" : 10,
+            "defense" : 0,
+            "speed" : 0
+        }
+    }
+]

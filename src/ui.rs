@@ -2,7 +2,8 @@ use ggez::{
     Context,
     graphics::{Canvas, Color, DrawParam, DrawMode, Drawable, Rect, Text, TextFragment, Mesh}, mint::Point2
 };
-use crate::{characters::{self, Ability, CharacterId}, menu::{self, NodeHandle}};
+use ordermap::OrderMap;
+use crate::{characters::{self, CharacterId}, menu::{self, NodeHandle}};
 use crate::menu::Menu;
 use std::{cmp::min, collections::HashMap, sync::Arc};
 use crate::action::*;
@@ -210,7 +211,7 @@ impl Bars {
 
 }
 
-pub fn draw_character_uis(canvas: &mut Canvas, character_uis: &HashMap<CharacterId, Bars>) {
+pub fn draw_character_uis(canvas: &mut Canvas, character_uis: &OrderMap<CharacterId, Bars>) {
     character_uis
         .values()
         .enumerate()

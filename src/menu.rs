@@ -101,7 +101,6 @@ impl Menu {
 
 #[cfg(test)]
 mod tests {
-    use crate::characters::Ability;
 
     use super::*;
 

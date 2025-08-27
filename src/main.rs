@@ -7,13 +7,15 @@ use ggez::{
     context::Has, event, graphics::{self, Canvas, Color, DrawParam, Drawable, Image, Rect}, input::{self, keyboard::{KeyCode, KeyInput}, }, mint::{Point2, Vector2}, Context, GameResult
 };
 
-use rpg::{action::{PendingAction, Action}, assets::Assets, ui};
+use rpg::{ability::Ability, action::{Action, PendingAction}, assets::Assets, ui};
 use rpg::menu::*;
 use rpg::ui::*;
 use rpg::characters::*;
 
-use std::{collections::HashMap, env, iter::Map};
+use std::{collections::HashMap, env, hash::RandomState, iter::Map};
 use std::path;
+
+use ordermap::OrderMap;
 
 
 struct MainState {
@@ -22,7 +24,8 @@ struct MainState {
     enemy_party: Party,
     game_state: GameState,
     ui: Ui,
-    character_uis: HashMap<CharacterId, Bars>,
+    // character_uis: HashMap<CharacterId, Bars>,
+    character_uis: OrderMap<CharacterId, Bars, RandomState>,
     current_action: PendingAction,
     player_abilities: Vec<String>,
     character_names: Vec<String>,
@@ -42,7 +45,7 @@ impl MainState {
         let mut fp = Party::new(FRIENDLY_PARTY_POSITION);
         let mut ep = Party::new(ENEMY_PARTY_POSITION);
 
-        let abilities = vec![Ability::new(String::from("a1")),Ability::new(String::from("a2"))];
+        let abilities = vec![String::from("a1"), String::from("a2")];
 
         let character = Character::new(0, "hero", abilities.clone(), "char_1", fast_stats.clone());
         let character_2 = Character::new(1, "hero_2", abilities.clone(), "char_2", v_fast_stats.clone());
@@ -59,7 +62,7 @@ impl MainState {
 
         let player_abilities = fp.characters
             .iter()
-            .flat_map(|ch| ch.abilities.iter().map(|ab| ab.name.clone()))
+            .flat_map(|ch| ch.abilities.clone())
             .collect();
 
         let character_names = fp.characters
@@ -101,10 +104,15 @@ impl MainState {
         let mut ui = Ui::new(menu);
         ui.load_menu();
         
-        let character_uis : HashMap<CharacterId, Bars> = fp.characters
+        // let character_uis : HashMap<CharacterId, Bars> = fp.characters
+        //     .iter()
+        //     .map(|ch| (ch.id, Bars::new(ctx)))
+        //     .collect();
+
+        let character_uis = fp.characters
             .iter()
             .map(|ch| (ch.id, Bars::new(ctx)))
-            .collect();
+            .collect::<OrderMap<CharacterId, Bars>>();
 
         let current_action = Action::new();
 
@@ -123,7 +131,10 @@ impl event::EventHandler<ggez::GameError> for MainState {
         match &self.game_state {
             GameState::Battle => {
                 
-                self.friendly_party.update_action_points();
+                // self.friendly_party.update_action_points();
+                self.friendly_party.characters.iter_mut().find(|ch| ch.name == "hero").unwrap().action_points = 100;
+                self.friendly_party.characters.iter_mut().find(|ch| ch.name == "hero_2").unwrap().action_points = 200;
+                self.friendly_party.characters.iter_mut().find(|ch| ch.name == "hero_3").unwrap().action_points = 300;
                 self.character_uis
                     .iter_mut()
                     .for_each(|(ch_id,bars)| {
@@ -166,7 +177,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
                         } else {
                             self.ui.go_back();
                             self.ui.load_menu();
-                            println!("Cannot act yet!");
+                            println!("Cannot act yet!, {}", self.friendly_party.characters.iter().find(|ch| ch.name == *curr_selection).unwrap().action_points);
                         }
 
                     } 
@@ -247,9 +258,9 @@ impl event::EventHandler<ggez::GameError> for MainState {
                         dbg!(&self.ui.menu_state);
         }
 
-        // if _ctx.keyboard.is_key_just_pressed(KeyCode::D) {
-        //     self.friendly_party.characters.get_mut(0).unwrap().take_damage(10);
-        // }
+        if _ctx.keyboard.is_key_just_pressed(KeyCode::D) {
+            self.friendly_party.characters.get_mut(0).unwrap().take_damage(10);
+        }
 
         // if _ctx.keyboard.is_key_just_pressed(KeyCode::H) {
         //     self.friendly_party.characters.get_mut(0).unwrap().heal(10);

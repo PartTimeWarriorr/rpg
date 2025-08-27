@@ -1,4 +1,4 @@
-use crate::{ability, action, characters::*};
+use crate::{ability::*, action, characters::*};
 
 #[derive(Debug)]
 pub enum ActionType {
@@ -89,7 +89,7 @@ impl PendingAction {
             } else {
                 None
             },
-            ability: Ability::new(String::from("s"))
+            ability: Ability::new_empty("")
         } 
         // Action { action_type: self.action_type.unwrap(), actor: self.actor.unwrap(), target: self.target.unwrap(), ability: Ability::new(String::from("s")) }
     }
