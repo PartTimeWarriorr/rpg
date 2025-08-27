@@ -17,14 +17,17 @@ use ggez::{
 
 use crate::{assets::Assets, characters};
 
-#[derive(Clone)]
+use serde::Deserialize;
+
+// for drawing purposes?
+#[derive(Clone, Deserialize, Debug)]
 pub enum CharacterState {
     Default, 
     Attacking,
     Defending,
     Damaged
 }
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Deserialize, Debug)]
 pub struct Stats {
     max_health: u32,
     pub attack: u32,
@@ -86,33 +89,20 @@ impl Party {
 
 }
 
-// #[derive(Clone, Debug)]
-// pub struct Ability {
-//     pub name: String,
-// }
-
-// impl Ability {
-//     pub fn new(name : String) -> Self {
-//         Ability {
-//             name
-//         }
-//     }
-// }
-
 pub const MAX_ACTION_POINTS : u32 = 500;
 
 pub type CharacterId = u32;
 
-#[derive(Clone)]
+#[derive(Clone, Deserialize, Debug)]
 pub struct Character {
     pub id: CharacterId,
     pub name: String,
     pub state: CharacterState,
-    // pub abilities: Vec<Ability>,
     pub abilities: Vec<String>,
     pub sprite: String,
     pub is_friendly: bool,
     pub stats: Stats,
+    #[serde(default)]
     pub action_points: u32,
     pub health: u32,
 }

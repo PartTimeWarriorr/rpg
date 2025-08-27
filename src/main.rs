@@ -12,11 +12,12 @@ use rpg::menu::*;
 use rpg::ui::*;
 use rpg::characters::*;
 
-use std::{collections::HashMap, env, hash::RandomState, iter::Map};
+use std::{collections::HashMap, env, hash::RandomState, io::BufReader, iter::Map, panic::UnwindSafe};
 use std::path;
 
 use ordermap::OrderMap;
-
+use std::fs::File;
+use std::io::BufRead;
 
 struct MainState {
     assets: Assets, 
@@ -52,6 +53,13 @@ impl MainState {
         let character_3 = Character::new(2, "hero_3", abilities.clone(),"char_3", slow_stats.clone());
         let enemy = Character::new(3, "orc",abilities.clone(), "enem_1", slow_stats.clone());
         let enemy_2 = Character::new(4, "orc_2",abilities.clone(), "enem_2", fast_stats.clone());
+
+        let file = File::open("src/friendly_party.json").unwrap();
+        let rdr = BufReader::new(file);
+
+        let json: Vec<Character> = serde_json::from_reader(rdr).expect("OH no"); 
+        
+        dbg!(&json);
 
 
         fp.add_member(character);
@@ -99,7 +107,7 @@ impl MainState {
             }
         }        
 
-        dbg!(&menu);
+        // dbg!(&menu);
 
         let mut ui = Ui::new(menu);
         ui.load_menu();
@@ -117,7 +125,7 @@ impl MainState {
         let current_action = Action::new();
 
 
-        dbg!(&character_names);
+        // dbg!(&character_names);
 
         // dbg!(&player_abilities);
 
@@ -254,8 +262,8 @@ impl event::EventHandler<ggez::GameError> for MainState {
                 },
                 MenuState::ChooseActor => {},
             }
-                        dbg!(&self.current_action);
-                        dbg!(&self.ui.menu_state);
+                        // dbg!(&self.current_action);
+                        // dbg!(&self.ui.menu_state);
         }
 
         if _ctx.keyboard.is_key_just_pressed(KeyCode::D) {

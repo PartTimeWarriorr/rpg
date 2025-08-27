@@ -56,7 +56,6 @@ impl Ability {
     }
 }
 
-
 pub fn load_abilities() {
     let file = File::open("src/abilities.json").unwrap();
     let rdr = BufReader::new(file);

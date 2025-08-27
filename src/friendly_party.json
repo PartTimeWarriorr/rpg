@@ -1,0 +1,62 @@
+[
+    {
+        "id" : 0,
+        "name" : "hero",
+        "state" : "Default",
+        "abilities" : [
+            "a1", 
+            "a2", 
+            "a3", 
+            "a4"
+        ],
+        "sprite" : "char_1",
+        "is_friendly" : true,
+        "stats" : {
+            "max_health" : 1,
+            "attack" : 2,
+            "defense" : 3,
+            "speed" : 1
+        },
+        "health" : 1
+    },
+    {
+        "id" : 1,
+        "name" : "hero_2",
+        "state" : "Default",
+        "abilities" : [
+            "a1", 
+            "a2", 
+            "a3", 
+            "a4"
+        ],
+        "sprite" : "char_2",
+        "is_friendly" : true,
+        "stats" : {
+            "max_health" : 1,
+            "attack" : 2,
+            "defense" : 3,
+            "speed" : 1
+        },
+        "health" : 1
+    },
+    {
+        "id" : 2,
+        "name" : "hero_3",
+        "state" : "Default",
+        "abilities" : [
+            "a1", 
+            "a2", 
+            "a3", 
+            "a4"
+        ],
+        "sprite" : "char_3",
+        "is_friendly" : true,
+        "stats" : {
+            "max_health" : 1,
+            "attack" : 2,
+            "defense" : 3,
+            "speed" : 1
+        },
+        "health" : 1
+    }
+]
