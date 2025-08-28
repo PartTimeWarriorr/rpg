@@ -25,6 +25,7 @@ pub struct Ability {
     pub power: u32,
     #[serde(default)]
     status_effect: Option<StatusEffect>,
+    pub message: String,
 }
 
 impl Ability {
@@ -35,15 +36,17 @@ impl Ability {
             ability_type: AbilityType::Damage,
             power: 10,
             status_effect: None,
+            message: String::new(),
         }
     }
 
-    pub fn new(name: &str, ability_type: AbilityType, power: u32, status_effect: StatusEffect) -> Self {
+    pub fn new(name: &str, ability_type: AbilityType, power: u32, status_effect: StatusEffect, message: String) -> Self {
         Ability {
             name: String::from(name),
             ability_type,
             power,
             status_effect: Some(status_effect),
+            message,
         }
     }
 

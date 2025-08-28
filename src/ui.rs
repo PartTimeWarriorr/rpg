@@ -15,7 +15,7 @@ const SELECTED_COLOR : Color = Color::new(1.0, 1.0, 0.0, 1.0);
 const DEFAULT_COLOR : Color = Color::new(1.0, 1.0, 1.0, 1.0);
 
 const BOX_PADDING : f32 = 10.0;
-const BOX_SIZE : f32 = 10.0;
+const UI_SIZE : f32 = 10.0;
 
 #[derive(Debug)]
 pub enum MenuState {
@@ -90,6 +90,10 @@ impl Ui {
         self.curr_node = self.menu.nodes[self.curr_node].parent;
     }
 
+    pub fn reset(&mut self) {
+        self.curr_node = self.menu.root; 
+    }
+
     pub fn change_selection(&mut self, diff: i32) {
 
         self.selected_box += diff; 
@@ -123,7 +127,7 @@ impl Drawable for Ui {
 
     fn dimensions(&self, gfx: &impl ggez::context::Has<ggez::graphics::GraphicsContext>) -> Option<ggez::graphics::Rect> {
         
-        Some(Rect::new(BOX_SIZE, BOX_SIZE, BOX_SIZE, BOX_SIZE))
+        Some(Rect::new(UI_SIZE, UI_SIZE, UI_SIZE, UI_SIZE))
     }
 }
 
@@ -216,4 +220,49 @@ pub fn draw_character_uis(canvas: &mut Canvas, character_uis: &OrderMap<Characte
         .values()
         .enumerate()
         .for_each(|(i, ui)| ui.draw_bars(canvas, 0.0 + i as f32 * BAR_PADDING));
+}
+
+const DIALOGUE_BOX_POSITION : Point2<f32> = Point2{ x: 100.0, y: 20.0 }; 
+const DIALOGUE_BOX_WIDTH : f32 = 100.0;
+const DIALOGUE_BOX_PADDING : f32 = 30.0;
+
+pub struct DialogueBox {
+    pub text_lines: Vec<Text>,
+}
+
+impl DialogueBox {
+
+    pub fn new() -> Self {
+        DialogueBox { 
+            text_lines: vec![Text::new(TextFragment::new("").color(DEFAULT_COLOR)); 2]
+        }
+    }
+
+    pub fn notify(&mut self, message: &str) {
+        self.text_lines.rotate_right(1);
+        
+        if let Some(first) = self.text_lines.first_mut() {
+            first.clear();
+            first.add(message);
+        }
+    }
+}
+
+impl Drawable for DialogueBox {
+    
+    fn draw(&self, canvas: &mut Canvas, param: impl Into<DrawParam>) {
+        for (i, line) in self.text_lines.iter().enumerate() {
+            let dest = Point2{ x : DIALOGUE_BOX_POSITION.x, y : DIALOGUE_BOX_POSITION.y + i as f32 * DIALOGUE_BOX_PADDING };
+            line.draw(canvas, DrawParam::default().dest(dest));
+        }
+    }
+
+    fn dimensions(&self, gfx: &impl ggez::context::Has<ggez::graphics::GraphicsContext>) -> Option<Rect> {
+        Some(Rect::new(
+            DIALOGUE_BOX_POSITION.x, 
+            DIALOGUE_BOX_POSITION.y, 
+            DIALOGUE_BOX_WIDTH,
+            BOX_PADDING * self.text_lines.len() as f32, 
+        ))
+    }
 }

@@ -189,6 +189,10 @@ impl Character {
         self.action_points = min(self.action_points + self.stats.speed, MAX_ACTION_POINTS);
     }
 
+    pub fn use_action_points(&mut self) {
+        self.action_points = 0;
+    }
+
     pub fn take_damage(&mut self, damage: u32) {
         self.health = self.health.saturating_sub(damage);
     }

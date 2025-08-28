@@ -4,21 +4,19 @@
 #![allow(unused_variables)]
 
 use ggez::{
-    context::Has, event, graphics::{self, Canvas, Color, DrawParam, Drawable, Image, Rect}, input::{self, keyboard::{KeyCode, KeyInput}, }, mint::{Point2, Vector2}, Context, GameResult
+    context::Has, event, graphics::{self, Canvas, Color, DrawParam, Drawable, Image, Rect}, 
+    input::{self, keyboard::{KeyCode}, }, 
+    mint::{Point2, Vector2}, Context, GameResult
 };
 
-use rpg::{ability::Ability, action::{self, Action, PendingAction}, assets::Assets, ui};
+use rpg::{ability::Ability, action::{Action, PendingAction}, assets::Assets};
 use rpg::menu::*;
 use rpg::ui::*;
 use rpg::characters::*;
-use serde::de::value::Error;
 
-use std::{collections::HashMap, env, hash::RandomState, io::BufReader, iter::Map, panic::UnwindSafe};
-use std::path;
+use std::{path, env, hash::RandomState, fs::File, io::BufReader}; 
 
 use ordermap::OrderMap;
-use std::fs::File;
-use std::io::BufRead;
 
 struct MainState {
     assets: Assets, 
@@ -26,12 +24,12 @@ struct MainState {
     enemy_party: Party,
     game_state: GameState,
     ui: Ui,
-    // character_uis: HashMap<CharacterId, Bars>,
     character_uis: OrderMap<CharacterId, Bars, RandomState>,
     current_action: PendingAction,
     player_abilities: Vec<String>,
     character_names: Vec<String>,
-    abilities: Vec<Ability>
+    abilities: Vec<Ability>,
+    dialogue_box: DialogueBox,
 }
 
 const FRIENDLY_PARTY_POSITION : Point2<f32> = Point2 { x : 100.0, y: 200.0}; 
@@ -124,7 +122,9 @@ impl MainState {
 
         let current_action = Action::new();
 
-        Ok(MainState {assets, friendly_party: fp, enemy_party: ep, game_state, ui, character_uis, current_action, player_abilities, character_names, abilities})
+        let dialogue_box = DialogueBox::new();
+
+        Ok(MainState {assets, friendly_party: fp, enemy_party: ep, game_state, ui, character_uis, current_action, player_abilities, character_names, abilities, dialogue_box})
     }
 }
 
@@ -135,9 +135,6 @@ impl event::EventHandler<ggez::GameError> for MainState {
             GameState::Battle => {
                 
                 self.friendly_party.update_action_points();
-                // self.friendly_party.characters.iter_mut().find(|ch| ch.name == "hero").unwrap().action_points = 100;
-                // self.friendly_party.characters.iter_mut().find(|ch| ch.name == "hero_2").unwrap().action_points = 200;
-                // self.friendly_party.characters.iter_mut().find(|ch| ch.name == "hero_3").unwrap().action_points = 300;
                 self.character_uis
                     .iter_mut()
                     .for_each(|(ch_id,bars)| {
@@ -147,7 +144,9 @@ impl event::EventHandler<ggez::GameError> for MainState {
                     });
 
                 self.enemy_party.update_action_points();
-                
+                    
+                // dbg!(self.enemy_party.characters.get(0).unwrap().action_points);
+                // dbg!(self.enemy_party.characters.get(1).unwrap().action_points);
                 
             },
             GameState::Overworld => {}
@@ -178,7 +177,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
                             self.current_action.actor(curr_selection);
                             self.ui.menu_state = MenuState::ChooseActionType;
                         } else {
-                            self.ui.go_back();
+                            self.ui.reset();
                             self.ui.load_menu();
                             println!("Cannot act yet!, {}", self.friendly_party.characters.iter().find(|ch| ch.name == *curr_selection).unwrap().action_points);
                         }
@@ -191,8 +190,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
                         self.ui.menu_state = MenuState::ChooseAbility;
                     } else if curr_selection == "Guard" {
                         self.current_action.action_type(rpg::action::ActionType::Guard);
-                        self.ui.go_back();
-                        self.ui.go_back();
+                        self.ui.reset();
                         self.ui.load_menu();
                         self.ui.menu_state = MenuState::ChooseActor;
                     } else if curr_selection == "Item" {
@@ -200,8 +198,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
                         self.ui.menu_state = MenuState::ChooseTarget;
                     } else if curr_selection == "Flee" {
                         self.current_action.action_type(rpg::action::ActionType::Flee);
-                        self.ui.go_back();
-                        self.ui.go_back();
+                        self.ui.reset();
                         self.ui.load_menu();
                         self.ui.menu_state = MenuState::ChooseActor;
                     }
@@ -217,28 +214,29 @@ impl event::EventHandler<ggez::GameError> for MainState {
                     if self.character_names.iter().any(|ch_name| *ch_name == curr_selection) {
                         self.current_action.target(curr_selection);
                     }
-                    self.ui.go_back();
-                    self.ui.go_back();
-                    self.ui.go_back();
-                    self.ui.go_back();
+                    self.ui.reset();
                     self.ui.load_menu();
 
                     // Works!!
                     // Action gets built and resolved
                     let complete_action = self.current_action.build(&self.abilities); 
-                    println!("Complete action: {:?}", complete_action);
-                    println!("Current action: {:?}", self.current_action);
-                    println!("Orc stats: {:?}", self.enemy_party.characters.iter().find(|ch| ch.name == "orc_2").unwrap().health);
-                    complete_action.resolve(&mut self.friendly_party, &mut self.enemy_party);
+
+                    self.friendly_party.characters.iter_mut().find(|ch| ch.name == complete_action.actor).unwrap().use_action_points();
+                
+                    complete_action.resolve(&mut self.friendly_party, &mut self.enemy_party, &mut self.dialogue_box);
 
                     println!("Orc stats: {:?}", self.enemy_party.characters.iter().find(|ch| ch.name == "orc_2").unwrap().health);
 
                     self.ui.menu_state = MenuState::ChooseActor;
                 }
             }
+        }
 
-                        // dbg!(&self.current_action);
-                        // dbg!(&self.ui.menu_state);
+        // if self.enemy_party.characters.iter().any(f)
+        if let Some(ch) = self.enemy_party.characters.iter_mut().find(|ch| ch.action_points == MAX_ACTION_POINTS) {
+            println!("{} the Destroyer", ch.name);
+            ch.use_action_points();
+            self.friendly_party.characters.get_mut(0).unwrap().take_damage(ch.stats.attack);
         }
 
         if _ctx.keyboard.is_key_just_pressed(KeyCode::X) {
@@ -257,17 +255,9 @@ impl event::EventHandler<ggez::GameError> for MainState {
                 },
                 MenuState::ChooseActor => {},
             }
-                        // dbg!(&self.current_action);
-                        // dbg!(&self.ui.menu_state);
         }
 
-        if _ctx.keyboard.is_key_just_pressed(KeyCode::D) {
-            self.friendly_party.characters.get_mut(0).unwrap().take_damage(10);
-        }
-
-        // if _ctx.keyboard.is_key_just_pressed(KeyCode::H) {
-        //     self.friendly_party.characters.get_mut(0).unwrap().heal(10);
-        // }
+        
 
         Ok(())
     }
@@ -291,6 +281,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
 
                 self.ui.draw(&mut canvas, DrawParam::default());
                 draw_character_uis(&mut canvas, &self.character_uis);
+                self.dialogue_box.draw(&mut canvas, DrawParam::default());
 
                 canvas.finish(ctx)?;
             },

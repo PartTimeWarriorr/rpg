@@ -2,12 +2,14 @@
     {
         "name" : "Fireball",
         "ability_type" : "Damage",
-        "power" : 100
+        "power" : 100,
+        "message" : "{} conjures a ball of fire!"
     },
     {
         "name" : "Cleave",
         "ability_type" : "Damage",
-        "power" : 80
+        "power" : 80,
+        "message" : "{} swings their axe!"
     },
     {
         "name" : "Epic Buff",
@@ -17,6 +19,7 @@
             "attack" : 10,
             "defense" : 0,
             "speed" : 0
-        }
+        },
+        "message" : "{} powers up their allies!"
     }
 ]

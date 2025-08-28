@@ -1,6 +1,6 @@
-use std::io::BufReader;
+use std::{fmt, io::BufReader};
 
-use crate::{ability::{self, *}, action, characters::*};
+use crate::{ability::{self, *}, action, characters::*, ui::DialogueBox};
 
 #[derive(Debug)]
 pub enum ActionType {
@@ -13,21 +13,18 @@ pub enum ActionType {
 #[derive(Debug)]
 pub struct Action {
     action_type: ActionType,
-    actor: String,
+    pub actor: String,
     target: Option<String>,
     ability: Option<Ability>
 }
 
 impl Action {
-    // pub fn new(actor: CharacterId, target: CharacterId, ability: Ability) -> Self {
-    //     Action { actor, target, ability }
-    // }
 
     pub fn new() -> PendingAction {
         PendingAction::new()
     }
 
-    pub fn resolve(self, friendly_party: &mut Party, enemy_party: &mut Party) {
+    pub fn resolve(self, friendly_party: &mut Party, enemy_party: &mut Party, dialogue_box: &mut DialogueBox) {
         let actor_ch = friendly_party.characters.iter_mut().find(|ch| ch.name == self.actor).unwrap();
 
         match self.action_type {
@@ -37,12 +34,18 @@ impl Action {
                 
                 if let Some(ab) = self.ability {
                     attack_power += ab.power;
+                    let str = "adsad";
+                    dialogue_box.notify(&ab.message.replace("{}", &actor_ch.name));
                 }
+
+                dialogue_box.notify(&format!("{} takes a hit!", target_ch.name));
 
                 target_ch.take_damage(attack_power);
             },
             ActionType::Guard => {
                 actor_ch.stats.defense = actor_ch.stats.defense + 10;
+
+                dialogue_box.notify(&format!("{} is guarding!", actor_ch.name));
             },
             ActionType::Item => {
                 // use_item
