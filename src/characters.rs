@@ -27,6 +27,11 @@ pub enum CharacterState {
     Defending,
     Damaged
 }
+
+fn default_state() -> CharacterState {
+    CharacterState::Default
+}
+
 #[derive(Clone, Copy, Deserialize, Debug)]
 pub struct Stats {
     max_health: u32,
@@ -41,6 +46,7 @@ impl Stats {
     }
 }
 
+#[derive(Debug)]
 pub struct Party {
     pub characters: Vec<Character>,
     pub position: Point2<f32>,
@@ -48,7 +54,11 @@ pub struct Party {
 
 impl Party {
 
-    pub fn new(position: Point2<f32>) -> Self {
+    pub fn new(characters : Vec<Character>, position: Point2<f32>) -> Self {
+        Party { characters, position }
+    }
+
+    pub fn new_empty(position: Point2<f32>) -> Self {
         Party {
             characters: Vec::new(),
             position
@@ -93,7 +103,44 @@ pub const MAX_ACTION_POINTS : u32 = 500;
 
 pub type CharacterId = u32;
 
-#[derive(Clone, Deserialize, Debug)]
+#[derive(Deserialize)]
+struct CharacterRaw {
+    pub id: CharacterId,
+    pub name: String,
+    #[serde(default = "default_state")]
+    pub state: CharacterState,
+    pub abilities: Vec<String>,
+    pub sprite: String,
+    pub is_friendly: bool,
+    pub stats: Stats,
+    #[serde(default)]
+    pub action_points: u32,
+}
+
+impl<'de> Deserialize<'de> for Character {
+    
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+        where
+            D: serde::Deserializer<'de> {
+        let raw = CharacterRaw::deserialize(deserializer)?;
+
+        Ok(
+            Character { 
+                id: raw.id,
+                name: raw.name, 
+                state: raw.state, 
+                abilities: raw.abilities, 
+                sprite: raw.sprite, 
+                is_friendly: raw.is_friendly, 
+                stats: raw.stats, 
+                action_points: raw.action_points, 
+                health: raw.stats.max_health
+            }   
+        )
+    }
+}
+
+#[derive(Clone, Debug)]
 pub struct Character {
     pub id: CharacterId,
     pub name: String,
@@ -102,12 +149,13 @@ pub struct Character {
     pub sprite: String,
     pub is_friendly: bool,
     pub stats: Stats,
-    #[serde(default)]
     pub action_points: u32,
     pub health: u32,
-}
+}        
+
 
 impl Character {
+    // pub fn new(id: CharacterId, name: &str, abilities: Vec<String>, sprite: &str, stats: Stats) -> Self {
     pub fn new(id: CharacterId, name: &str, abilities: Vec<String>, sprite: &str, stats: Stats) -> Self {
         Character {
             id,

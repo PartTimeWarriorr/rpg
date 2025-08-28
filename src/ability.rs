@@ -20,9 +20,9 @@ pub enum AbilityType {
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct Ability {
-    name: String,
+    pub name: String,
     ability_type: AbilityType,
-    power: u32,
+    pub power: u32,
     #[serde(default)]
     status_effect: Option<StatusEffect>,
 }

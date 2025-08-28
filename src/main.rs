@@ -7,10 +7,11 @@ use ggez::{
     context::Has, event, graphics::{self, Canvas, Color, DrawParam, Drawable, Image, Rect}, input::{self, keyboard::{KeyCode, KeyInput}, }, mint::{Point2, Vector2}, Context, GameResult
 };
 
-use rpg::{ability::Ability, action::{Action, PendingAction}, assets::Assets, ui};
+use rpg::{ability::Ability, action::{self, Action, PendingAction}, assets::Assets, ui};
 use rpg::menu::*;
 use rpg::ui::*;
 use rpg::characters::*;
+use serde::de::value::Error;
 
 use std::{collections::HashMap, env, hash::RandomState, io::BufReader, iter::Map, panic::UnwindSafe};
 use std::path;
@@ -30,43 +31,50 @@ struct MainState {
     current_action: PendingAction,
     player_abilities: Vec<String>,
     character_names: Vec<String>,
+    abilities: Vec<Ability>
 }
 
 const FRIENDLY_PARTY_POSITION : Point2<f32> = Point2 { x : 100.0, y: 200.0}; 
 const ENEMY_PARTY_POSITION : Point2<f32> = Point2 { x : 400.0, y: 200.0}; 
 
+pub fn load_friendly_party() -> Party {
+    let file = File::open("src/friendly_party.json").expect("Config file not found: friendly_party");
+    let rdr = BufReader::new(file);
+
+    match serde_json::from_reader(rdr) {
+        Ok(json) => Party::new(json, FRIENDLY_PARTY_POSITION),
+        Err(err) => panic!("Error when parsing json: {}", err)
+    } 
+}
+
+pub fn load_enemies() ->  Vec<Vec<Character>> {
+    let file = File::open("src/enemies.json").expect("Config file not found: enemies");
+    let rdr = BufReader::new(file);
+
+    match serde_json::from_reader(rdr) {
+        Ok(json) => json,
+        Err(err) => panic!("Error when parsing json: {}", err)
+    } 
+}
+
+pub fn load_abilities() -> Vec<Ability> {
+    let file = File::open("src/abilities.json").expect("Config file not found: abilities");
+    let rdr = BufReader::new(file);
+
+    match serde_json::from_reader(rdr) {
+        Ok(json) => json,
+        Err(err) => panic!("Error when parsing json: {}", err)
+    } 
+}
+
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
         let assets = Assets::new(ctx)?;
 
-        let slow_stats = Stats::new(500,1,1,1);
-        let fast_stats = Stats::new(500,2,2,2);
-        let v_fast_stats = Stats::new(500,3,3,3);
-
-        let mut fp = Party::new(FRIENDLY_PARTY_POSITION);
-        let mut ep = Party::new(ENEMY_PARTY_POSITION);
-
-        let abilities = vec![String::from("a1"), String::from("a2")];
-
-        let character = Character::new(0, "hero", abilities.clone(), "char_1", fast_stats.clone());
-        let character_2 = Character::new(1, "hero_2", abilities.clone(), "char_2", v_fast_stats.clone());
-        let character_3 = Character::new(2, "hero_3", abilities.clone(),"char_3", slow_stats.clone());
-        let enemy = Character::new(3, "orc",abilities.clone(), "enem_1", slow_stats.clone());
-        let enemy_2 = Character::new(4, "orc_2",abilities.clone(), "enem_2", fast_stats.clone());
-
-        let file = File::open("src/friendly_party.json").unwrap();
-        let rdr = BufReader::new(file);
-
-        let json: Vec<Character> = serde_json::from_reader(rdr).expect("OH no"); 
-        
-        dbg!(&json);
-
-
-        fp.add_member(character);
-        fp.add_member(character_2);
-        fp.add_member(character_3);
-        ep.add_member(enemy);
-        ep.add_member(enemy_2);
+        let fp = load_friendly_party();
+        dbg!(&fp);
+        let all_enemies = load_enemies();
+        let ep = Party::new(all_enemies.get(0).unwrap().clone(), ENEMY_PARTY_POSITION);
 
         let player_abilities = fp.characters
             .iter()
@@ -83,40 +91,32 @@ impl MainState {
 
         let mut menu = Menu::new();
 
-        for hero_name in vec!["hero", "hero_2", "hero_3"] {
-            // menu.insert_at("root", hero_name);
-            menu.insert_at_path(&["root"], hero_name);
+        for hero_name in fp.characters.iter().map(|ch| ch.name.clone()) {
+            menu.insert_at_path(&["root"], &hero_name);
 
             for action in vec!["Fight", "Guard", "Item", "Flee"] {
                 // menu.insert_at(hero_name, action);
-                menu.insert_at_path(&["root", hero_name], action);
+                menu.insert_at_path(&["root", &hero_name], action);
             }
 
-            // TODO: Ewwwwww
             for ch_name in &character_names {
-                menu.insert_at_path(&["root", hero_name, "Item"], &ch_name);
-            }
+                menu.insert_at_path(&["root", &hero_name, "Item"], &ch_name);
+            } 
 
-            for ability in vec!["a1", "a2"] {
-                menu.insert_at_path(&["root", hero_name, "Fight"], ability);
+            for ability in fp.characters.iter().find(|ch| ch.name == hero_name).unwrap().abilities.clone() {
+                menu.insert_at_path(&["root", &hero_name, "Fight"], &ability);
 
-                // TODO: Ewwwwww
                 for ch_name in &character_names {
-                    menu.insert_at_path(&["root", hero_name, "Fight", ability], &ch_name);
+                    menu.insert_at_path(&["root", &hero_name, "Fight", &ability], &ch_name);
                 }
             }
-        }        
+        }
 
-        // dbg!(&menu);
+        let abilities = load_abilities();
 
         let mut ui = Ui::new(menu);
         ui.load_menu();
         
-        // let character_uis : HashMap<CharacterId, Bars> = fp.characters
-        //     .iter()
-        //     .map(|ch| (ch.id, Bars::new(ctx)))
-        //     .collect();
-
         let character_uis = fp.characters
             .iter()
             .map(|ch| (ch.id, Bars::new(ctx)))
@@ -124,12 +124,7 @@ impl MainState {
 
         let current_action = Action::new();
 
-
-        // dbg!(&character_names);
-
-        // dbg!(&player_abilities);
-
-        Ok(MainState {assets, friendly_party: fp, enemy_party: ep, game_state, ui, character_uis, current_action, player_abilities, character_names})
+        Ok(MainState {assets, friendly_party: fp, enemy_party: ep, game_state, ui, character_uis, current_action, player_abilities, character_names, abilities})
     }
 }
 
@@ -139,10 +134,10 @@ impl event::EventHandler<ggez::GameError> for MainState {
         match &self.game_state {
             GameState::Battle => {
                 
-                // self.friendly_party.update_action_points();
-                self.friendly_party.characters.iter_mut().find(|ch| ch.name == "hero").unwrap().action_points = 100;
-                self.friendly_party.characters.iter_mut().find(|ch| ch.name == "hero_2").unwrap().action_points = 200;
-                self.friendly_party.characters.iter_mut().find(|ch| ch.name == "hero_3").unwrap().action_points = 300;
+                self.friendly_party.update_action_points();
+                // self.friendly_party.characters.iter_mut().find(|ch| ch.name == "hero").unwrap().action_points = 100;
+                // self.friendly_party.characters.iter_mut().find(|ch| ch.name == "hero_2").unwrap().action_points = 200;
+                // self.friendly_party.characters.iter_mut().find(|ch| ch.name == "hero_3").unwrap().action_points = 300;
                 self.character_uis
                     .iter_mut()
                     .for_each(|(ch_id,bars)| {
@@ -230,7 +225,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
 
                     // Works!!
                     // Action gets built and resolved
-                    let complete_action = self.current_action.build(); 
+                    let complete_action = self.current_action.build(&self.abilities); 
                     println!("Complete action: {:?}", complete_action);
                     println!("Current action: {:?}", self.current_action);
                     println!("Orc stats: {:?}", self.enemy_party.characters.iter().find(|ch| ch.name == "orc_2").unwrap().health);

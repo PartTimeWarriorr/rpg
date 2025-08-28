@@ -1,4 +1,6 @@
-use crate::{ability::*, action, characters::*};
+use std::io::BufReader;
+
+use crate::{ability::{self, *}, action, characters::*};
 
 #[derive(Debug)]
 pub enum ActionType {
@@ -13,7 +15,7 @@ pub struct Action {
     action_type: ActionType,
     actor: String,
     target: Option<String>,
-    ability: Ability
+    ability: Option<Ability>
 }
 
 impl Action {
@@ -31,8 +33,13 @@ impl Action {
         match self.action_type {
             ActionType::Fight => {
                 let target_ch = enemy_party.characters.iter_mut().find(|ch| ch.name == self.target.clone().unwrap()).unwrap();
-                let power = actor_ch.stats.attack;
-                target_ch.take_damage(power);
+                let mut attack_power = actor_ch.stats.attack;
+                
+                if let Some(ab) = self.ability {
+                    attack_power += ab.power;
+                }
+
+                target_ch.take_damage(attack_power);
             },
             ActionType::Guard => {
                 actor_ch.stats.defense = actor_ch.stats.defense + 10;
@@ -80,7 +87,7 @@ impl PendingAction {
         self
     }
 
-    pub fn build(&mut self) -> Action {
+    pub fn build(&mut self, abilities: &Vec<Ability>) -> Action {
         Action {
             action_type: self.action_type.take().unwrap(),
             actor: self.actor.take().unwrap(),
@@ -89,7 +96,11 @@ impl PendingAction {
             } else {
                 None
             },
-            ability: Ability::new_empty("")
+            ability: if let Some(ab_name) = self.ability.take() {
+                Some(abilities.iter().find(|ab| ab.name == ab_name).unwrap().clone())
+            } else {
+                None
+            }
         } 
         // Action { action_type: self.action_type.unwrap(), actor: self.actor.unwrap(), target: self.target.unwrap(), ability: Ability::new(String::from("s")) }
     }
