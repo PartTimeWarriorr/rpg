@@ -29,31 +29,48 @@ impl Action {
 
         match self.action_type {
             ActionType::Fight => {
+                actor_ch.state = CharacterState::Default;
                 let target_ch = enemy_party.characters.iter_mut().find(|ch| ch.name == self.target.clone().unwrap()).unwrap();
-                let mut attack_power = actor_ch.stats.attack;
-                
-                if let Some(ab) = self.ability {
-                    attack_power += ab.power;
-                    let str = "adsad";
-                    dialogue_box.notify(&ab.message.replace("{}", &actor_ch.name));
+                let ability = self.ability.unwrap();
+
+                match ability.ability_type {
+                    AbilityType::Damage => {
+                        let mut attack_power = actor_ch.calculate_attack(); 
+                        attack_power += ability.power;
+                        target_ch.take_damage(attack_power);
+
+                        dialogue_box.notify(&ability.message.replace("{}", &actor_ch.name));
+                        dialogue_box.notify(&format!("{} takes a hit!", target_ch.name));
+                        println!("{} health now", &target_ch.health);
+                    },
+                    AbilityType::Buff => {
+                        let b = ability.buff.expect("Expected buff variant");
+                        target_ch.buffs.push(b);
+
+                        dialogue_box.notify(&ability.message.replace("{}", &actor_ch.name));
+                    },
+                    AbilityType::Heal => {
+                        target_ch.heal(ability.power);
+                        dialogue_box.notify(&ability.message.replace("{}", &actor_ch.name));
+                    },
+                    AbilityType::Status => {
+                        // TODO
+                    }
                 }
-
-                dialogue_box.notify(&format!("{} takes a hit!", target_ch.name));
-
-                target_ch.take_damage(attack_power);
             },
             ActionType::Guard => {
-                actor_ch.stats.defense = actor_ch.stats.defense + 10;
-
+                actor_ch.state = CharacterState::Guarding;
                 dialogue_box.notify(&format!("{} is guarding!", actor_ch.name));
             },
             ActionType::Item => {
                 // use_item
-                println!("Using item now");
+                actor_ch.state = CharacterState::Default;
+                dialogue_box.notify(&format!("{} used an item!", actor_ch.name));
             },
             ActionType::Flee => {
                 // flee
-                println!("Fleeing now");
+                actor_ch.state = CharacterState::Default;
+                dialogue_box.notify(&format!("{} is trying to flee!", actor_ch.name));
             }
         }
     }

@@ -1,5 +1,20 @@
 [
     {
+        "name" : "Swing",
+        "ability_type" : "Damage",
+        "power" : 40,
+        "message" : "{} flails their arms angrily!"
+    },
+    {
+        "name" : "Enrage",
+        "ability_type" : "Buff",
+        "power" : 40,
+        "buff" : {
+            "Attack" : 40
+        },
+        "message" : "{} riles up their allies!"
+    },
+    {
         "name" : "Fireball",
         "ability_type" : "Damage",
         "power" : 100,
@@ -13,13 +28,17 @@
     },
     {
         "name" : "Epic Buff",
-        "ability_type" : "Status",
+        "ability_type" : "Buff",
         "power" : 10,
-        "status_effect" : {
-            "attack" : 10,
-            "defense" : 0,
-            "speed" : 0
+        "buff" : {
+            "Attack" : 10
         },
         "message" : "{} powers up their allies!"
+    },
+    {
+        "name" : "Flash Heal",
+        "ability_type" : "Heal",
+        "power" : 60,
+        "message" : "{} whips up a quick heal!"
     }
 ]

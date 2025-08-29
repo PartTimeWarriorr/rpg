@@ -5,10 +5,7 @@
             "name" : "orc",
             "state" : "Default",
             "abilities" : [
-                "a1", 
-                "a2", 
-                "a3", 
-                "a4"
+                "Swing"
             ],
             "sprite" : "enem_1",
             "is_friendly" : false,
@@ -16,7 +13,7 @@
                 "max_health" : 500,
                 "attack" : 2,
                 "defense" : 3,
-                "speed" : 0
+                "speed" : 2
             }
         },
         {
@@ -24,10 +21,7 @@
             "name" : "orc_2",
             "state" : "Default",
             "abilities" : [
-                "a1", 
-                "a2", 
-                "a3", 
-                "a4"
+                "Swing"
             ],
             "sprite" : "enem_2",
             "is_friendly" : false,

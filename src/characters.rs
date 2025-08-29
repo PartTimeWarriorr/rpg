@@ -24,7 +24,7 @@ use serde::Deserialize;
 pub enum CharacterState {
     Default, 
     Attacking,
-    Defending,
+    Guarding,
     Damaged
 }
 
@@ -44,6 +44,13 @@ impl Stats {
     pub fn new(max_health: u32, attack: u32, defense: u32, speed: u32) -> Self {
         Stats { max_health, attack, defense, speed }
     }
+}
+
+#[derive(Clone, Copy, Deserialize, Debug)]
+pub enum Buff {
+    Attack(u32),
+    Defense(u32),
+    Speed(u32)
 }
 
 #[derive(Debug)]
@@ -134,7 +141,8 @@ impl<'de> Deserialize<'de> for Character {
                 is_friendly: raw.is_friendly, 
                 stats: raw.stats, 
                 action_points: raw.action_points, 
-                health: raw.stats.max_health
+                health: raw.stats.max_health,
+                buffs: vec![],
             }   
         )
     }
@@ -151,6 +159,7 @@ pub struct Character {
     pub stats: Stats,
     pub action_points: u32,
     pub health: u32,
+    pub buffs: Vec<Buff>,
 }        
 
 
@@ -167,12 +176,55 @@ impl Character {
             stats,
             action_points: 0,
             health: stats.max_health,
+            buffs: vec![],
         }
     }
 
     pub fn update(&mut self) {
         self.update_action_points(); 
         // health, mana, ... take_damage()??? 
+    }
+
+    pub fn calculate_attack(&self) -> u32 {
+        let from_buffs : u32 = self.buffs
+            .iter()
+            .filter_map(|b| {
+                match b {
+                    Buff::Attack(val) => Some(*val),
+                    _ => None 
+                }
+            })
+            .sum();
+            
+        self.stats.attack + from_buffs
+    }
+
+    pub fn calculate_defense(&self) -> u32 {
+        let from_buffs : u32 = self.buffs
+            .iter()
+            .filter_map(|b| {
+                match b {
+                    Buff::Defense(val) => Some(*val),
+                    _ => None
+                }
+            })
+            .sum();
+
+        self.stats.defense + from_buffs
+    }
+
+    pub fn calculate_speed(&self) -> u32 {
+        let from_buffs : u32 = self.buffs
+            .iter()
+            .filter_map(|b| {
+                match b {
+                    Buff::Speed(val) => Some(*val),
+                    _ => None
+                }
+            })
+            .sum();
+
+        self.stats.speed + from_buffs
     }
 
     pub fn draw(&self,ctx : &Context, canvas: &mut graphics::Canvas, assets: &Assets, position: Point2<f32>) {
@@ -186,14 +238,22 @@ impl Character {
     }
 
     pub fn update_action_points(&mut self) {
-        self.action_points = min(self.action_points + self.stats.speed, MAX_ACTION_POINTS);
+        self.action_points = min(self.action_points + self.calculate_speed(), MAX_ACTION_POINTS);
     }
 
     pub fn use_action_points(&mut self) {
         self.action_points = 0;
     }
 
-    pub fn take_damage(&mut self, damage: u32) {
+    pub fn take_damage(&mut self, raw_damage: u32) {
+
+        let damage = match self.state {
+            CharacterState::Guarding => {
+                (raw_damage / 2).saturating_sub(self.calculate_defense())
+            },
+            _ => raw_damage.saturating_sub(self.calculate_defense())
+        };
+
         self.health = self.health.saturating_sub(damage);
     }
     pub fn heal(&mut self, heal_amount: u32) {

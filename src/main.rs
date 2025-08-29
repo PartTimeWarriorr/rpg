@@ -9,7 +9,8 @@ use ggez::{
     mint::{Point2, Vector2}, Context, GameResult
 };
 
-use rpg::{ability::Ability, action::{Action, PendingAction}, assets::Assets};
+use rand::seq::IndexedRandom;
+use rpg::{ability::{Ability, AbilityType}, action::{Action, PendingAction}, assets::Assets};
 use rpg::menu::*;
 use rpg::ui::*;
 use rpg::characters::*;
@@ -70,9 +71,13 @@ impl MainState {
         let assets = Assets::new(ctx)?;
 
         let fp = load_friendly_party();
-        dbg!(&fp);
         let all_enemies = load_enemies();
         let ep = Party::new(all_enemies.get(0).unwrap().clone(), ENEMY_PARTY_POSITION);
+
+        let player_names : Vec<String> = fp.characters.iter().map(|ch| ch.name.clone()).collect();
+        let enemy_names : Vec<String> = ep.characters.iter().map(|ch| ch.name.clone()).collect();
+
+        let abilities = load_abilities();
 
         let player_abilities = fp.characters
             .iter()
@@ -103,14 +108,26 @@ impl MainState {
 
             for ability in fp.characters.iter().find(|ch| ch.name == hero_name).unwrap().abilities.clone() {
                 menu.insert_at_path(&["root", &hero_name, "Fight"], &ability);
+                
+                let current_ability = abilities.iter().find(|ab| ab.name == ability).expect("Unknown ability");
 
-                for ch_name in &character_names {
-                    menu.insert_at_path(&["root", &hero_name, "Fight", &ability], &ch_name);
+                match current_ability.ability_type {
+                    AbilityType::Damage | AbilityType::Status => {
+                        // Damage and Status abilities have only enemies as targets
+                        for ch_name in &enemy_names {
+                            menu.insert_at_path(&["root", &hero_name, "Fight", &ability], &ch_name);
+                        }
+                    },
+                    AbilityType::Heal | AbilityType::Buff => {
+                        // Heal and Buff abilities have only friends as targets
+                        for ch_name in &player_names {
+                            menu.insert_at_path(&["root", &hero_name, "Fight", &ability], &ch_name);
+                        }
+                    }
                 }
             }
         }
 
-        let abilities = load_abilities();
 
         let mut ui = Ui::new(menu);
         ui.load_menu();
@@ -144,9 +161,6 @@ impl event::EventHandler<ggez::GameError> for MainState {
                     });
 
                 self.enemy_party.update_action_points();
-                    
-                // dbg!(self.enemy_party.characters.get(0).unwrap().action_points);
-                // dbg!(self.enemy_party.characters.get(1).unwrap().action_points);
                 
             },
             GameState::Overworld => {}
@@ -192,6 +206,9 @@ impl event::EventHandler<ggez::GameError> for MainState {
                         self.current_action.action_type(rpg::action::ActionType::Guard);
                         self.ui.reset();
                         self.ui.load_menu();
+                        let complete_action = self.current_action.build(&self.abilities);
+                        complete_action.resolve(&mut self.friendly_party, &mut self.enemy_party, &mut self.dialogue_box);
+                        // self.friendly_party.characters.iter_mut().find(|ch| ch.name == complete_action.actor).unwrap().use_action_points();
                         self.ui.menu_state = MenuState::ChooseActor;
                     } else if curr_selection == "Item" {
                         self.current_action.action_type(rpg::action::ActionType::Item);
@@ -232,11 +249,18 @@ impl event::EventHandler<ggez::GameError> for MainState {
             }
         }
 
-        // if self.enemy_party.characters.iter().any(f)
         if let Some(ch) = self.enemy_party.characters.iter_mut().find(|ch| ch.action_points == MAX_ACTION_POINTS) {
             println!("{} the Destroyer", ch.name);
             ch.use_action_points();
-            self.friendly_party.characters.get_mut(0).unwrap().take_damage(ch.stats.attack);
+            let mut rng = rand::rng();
+            let enemy_action = PendingAction::new()
+                .actor(ch.name.clone())
+                .action_type(rpg::action::ActionType::Fight)
+                .ability(ch.abilities.choose(&mut rng).unwrap().clone()) 
+                .target(self.friendly_party.characters.choose(&mut rng).unwrap().name.clone())
+                .build(&self.abilities)
+                .resolve(&mut self.enemy_party, &mut self.friendly_party, &mut self.dialogue_box);
+
         }
 
         if _ctx.keyboard.is_key_just_pressed(KeyCode::X) {

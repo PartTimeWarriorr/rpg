@@ -1,4 +1,7 @@
-use crate::characters::Character;
+use crate::characters::{
+    Character,
+    Buff
+};
 
 use serde::Deserialize;
 use std::fs::File;
@@ -11,20 +14,23 @@ pub struct StatusEffect {
     speed: i32,
 }
 
-#[derive(Clone, Copy, Debug, Deserialize)]
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq)]
 pub enum AbilityType {
     Damage,
     Heal,
+    Buff,
     Status
 }
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct Ability {
     pub name: String,
-    ability_type: AbilityType,
+    pub ability_type: AbilityType,
     pub power: u32,
     #[serde(default)]
     status_effect: Option<StatusEffect>,
+    #[serde(default)]
+    pub buff: Option<Buff>,
     pub message: String,
 }
 
@@ -36,16 +42,18 @@ impl Ability {
             ability_type: AbilityType::Damage,
             power: 10,
             status_effect: None,
+            buff: None,
             message: String::new(),
         }
     }
 
-    pub fn new(name: &str, ability_type: AbilityType, power: u32, status_effect: StatusEffect, message: String) -> Self {
+    pub fn new(name: &str, ability_type: AbilityType, power: u32, status_effect: StatusEffect, buff: Buff, message: String) -> Self {
         Ability {
             name: String::from(name),
             ability_type,
             power,
             status_effect: Some(status_effect),
+            buff: Some(buff),
             message,
         }
     }
@@ -54,6 +62,7 @@ impl Ability {
         match self.ability_type {
             AbilityType::Damage => target.take_damage(self.power),
             AbilityType::Heal => target.heal(self.power),
+            AbilityType::Buff => println!("I'm a buff"),
             AbilityType::Status => target.status_effect(),
         }
     }
