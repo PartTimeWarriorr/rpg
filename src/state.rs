@@ -1,0 +1,405 @@
+use ggez::{
+    context::Has, event, graphics::{self, Canvas, Color, DrawParam, Drawable, Image, Rect}, 
+    input::{self, keyboard::{KeyCode}, }, 
+    mint::{Point2, Vector2}, Context, GameResult,
+    timer::TimeContext,
+};
+
+use rand::seq::IndexedRandom;
+use crate::ability::*;
+use crate::assets::*;
+use crate::action::*;
+use crate::menu::*;
+use crate::ui::*;
+use crate::characters::*;
+use crate::load::*;
+
+use std::{path, env, hash::RandomState, fs::File, io::BufReader}; 
+
+use ordermap::OrderMap;
+
+enum GameState {
+    OverworldState,
+    BattleState
+}
+
+struct Battle {
+    pub character_names: Vec<String>,
+    pub enemy_party: Party,
+    pub action_menu: Ui,
+    pub current_action: PendingAction,
+    pub player_uis: OrderMap<CharacterId, Bars, RandomState>,
+    pub dialogue_box: DialogueBox,
+}
+
+impl Battle {
+    pub fn load_action_menu(fp: &Party, character_names: &Vec<String>, player_names: &Vec<String>, enemy_names: &Vec<String>, abilities: &Vec<Ability>) -> Ui {
+
+        let mut menu = Menu::new();
+
+        for hero_name in fp.characters.iter().map(|ch| ch.name.clone()) {
+            menu.insert_at_path(&["root"], &hero_name);
+
+            for action in vec!["Fight", "Guard", "Item", "Flee"] {
+                // menu.insert_at(hero_name, action);
+                menu.insert_at_path(&["root", &hero_name], action);
+            }
+
+            for ch_name in character_names {
+                menu.insert_at_path(&["root", &hero_name, "Item"], &ch_name);
+            } 
+
+            for ability in fp.characters.iter().find(|ch| ch.name == hero_name).unwrap().abilities.clone() {
+                menu.insert_at_path(&["root", &hero_name, "Fight"], &ability);
+                
+                let current_ability = abilities.iter().find(|ab| ab.name == ability).expect("Unknown ability");
+
+                match current_ability.ability_type {
+                    AbilityType::Damage | AbilityType::Status => {
+                        // Damage and Status abilities have only enemies as targets
+                        for ch_name in enemy_names {
+                            menu.insert_at_path(&["root", &hero_name, "Fight", &ability], &ch_name);
+                        }
+                    },
+                    AbilityType::Heal | AbilityType::Buff => {
+                        // Heal and Buff abilities have only friends as targets
+                        for ch_name in player_names {
+                            menu.insert_at_path(&["root", &hero_name, "Fight", &ability], &ch_name);
+                        }
+                    }
+                }
+            }
+        }
+
+
+        let mut ui = Ui::new(menu);
+        ui.load_menu();
+        ui
+    }
+}
+
+struct Overworld {
+
+}
+
+impl Overworld {
+    pub fn new() -> Self {
+        Overworld {  }
+    }
+}
+
+pub struct MainState {
+    assets: Assets, 
+    game_state: GameState,
+    abilities: Vec<Ability>,
+    all_enemies: Vec<Vec<Character>>,
+    curr_battle: Battle,
+    overworld: Overworld,
+    friendly_party: Party,
+    player_abilities: Vec<String>,
+}
+
+const FRIENDLY_PARTY_POSITION : Point2<f32> = Point2 { x : 100.0, y: 200.0}; 
+const ENEMY_PARTY_POSITION : Point2<f32> = Point2 { x : 400.0, y: 200.0}; 
+
+
+impl MainState {
+    pub fn new(ctx: &mut Context) -> GameResult<MainState> {
+
+        let abilities = load_abilities();
+        let all_enemies = load_enemies(); 
+        let friendly_party = Party::new(load_friendly_party(), FRIENDLY_PARTY_POSITION);
+        let enemy_party = Party::new(all_enemies.get(0).unwrap().clone(), ENEMY_PARTY_POSITION);
+
+        let character_names = friendly_party.characters
+            .iter()
+            .chain(&enemy_party.characters)
+            .map(|ch| ch.name.clone())
+            .collect::<Vec<String>>();
+
+        let player_uis = friendly_party.characters
+            .iter()
+            .map(|ch| (ch.id, Bars::new(ctx)))
+            .collect::<OrderMap<CharacterId, Bars>>();
+
+        let player_abilities = friendly_party.characters
+            .iter()
+            .flat_map(|ch| ch.abilities.clone())
+            .collect();
+
+        let player_names : Vec<String> = friendly_party.characters.iter().map(|ch| ch.name.clone()).collect();
+        let enemy_names : Vec<String> = enemy_party.characters.iter().map(|ch| ch.name.clone()).collect();
+
+        let b = Battle {
+            character_names: character_names.clone(),
+            enemy_party,
+            action_menu: Battle::load_action_menu(&friendly_party, &character_names, &player_names, &enemy_names, &abilities),
+            current_action: Action::new(),
+            player_uis,
+            dialogue_box: DialogueBox::new(),
+        };
+
+        Ok(
+            MainState {
+                assets: Assets::new(ctx)?,
+                game_state: GameState::BattleState,
+                abilities,
+                all_enemies,
+                curr_battle: b,
+                overworld: Overworld::new(),
+                friendly_party,
+                player_abilities,
+            }
+        )
+
+        // let assets = Assets::new(ctx)?;
+        
+
+        // let fp = Party::new(load_friendly_party(), FRIENDLY_PARTY_POSITION);
+        // let all_enemies = load_enemies();
+        // let ep = Party::new(all_enemies.get(0).unwrap().clone(), ENEMY_PARTY_POSITION);
+
+        // let player_names : Vec<String> = fp.characters.iter().map(|ch| ch.name.clone()).collect();
+        // let enemy_names : Vec<String> = ep.characters.iter().map(|ch| ch.name.clone()).collect();
+
+        // let abilities = load_abilities();
+
+        // let player_abilities = fp.characters
+        //     .iter()
+        //     .flat_map(|ch| ch.abilities.clone())
+        //     .collect();
+
+        // let character_names = fp.characters
+        //     .iter()
+        //     .chain(&ep.characters)
+        //     .map(|ch| ch.name.clone())
+        //     .collect::<Vec<String>>();
+
+        // let game_state = GameState::BattleState;
+
+        // let mut menu = Menu::new();
+
+        // for hero_name in fp.characters.iter().map(|ch| ch.name.clone()) {
+        //     menu.insert_at_path(&["root"], &hero_name);
+
+        //     for action in vec!["Fight", "Guard", "Item", "Flee"] {
+        //         // menu.insert_at(hero_name, action);
+        //         menu.insert_at_path(&["root", &hero_name], action);
+        //     }
+
+        //     for ch_name in &character_names {
+        //         menu.insert_at_path(&["root", &hero_name, "Item"], &ch_name);
+        //     } 
+
+        //     for ability in fp.characters.iter().find(|ch| ch.name == hero_name).unwrap().abilities.clone() {
+        //         menu.insert_at_path(&["root", &hero_name, "Fight"], &ability);
+                
+        //         let current_ability = abilities.iter().find(|ab| ab.name == ability).expect("Unknown ability");
+
+        //         match current_ability.ability_type {
+        //             AbilityType::Damage | AbilityType::Status => {
+        //                 // Damage and Status abilities have only enemies as targets
+        //                 for ch_name in &enemy_names {
+        //                     menu.insert_at_path(&["root", &hero_name, "Fight", &ability], &ch_name);
+        //                 }
+        //             },
+        //             AbilityType::Heal | AbilityType::Buff => {
+        //                 // Heal and Buff abilities have only friends as targets
+        //                 for ch_name in &player_names {
+        //                     menu.insert_at_path(&["root", &hero_name, "Fight", &ability], &ch_name);
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
+
+
+        // let mut ui = Ui::new(menu);
+        // ui.load_menu();
+        
+        // let character_uis = fp.characters
+        //     .iter()
+        //     .map(|ch| (ch.id, Bars::new(ctx)))
+        //     .collect::<OrderMap<CharacterId, Bars>>();
+
+        // let current_action = Action::new();
+
+        // let dialogue_box = DialogueBox::new();
+
+        // Ok(MainState {assets, friendly_party: fp, enemy_party: ep, game_state, ui, character_uis, current_action, player_abilities, character_names, abilities, dialogue_box})
+    }
+
+}
+
+impl event::EventHandler<ggez::GameError> for MainState {
+    fn update(&mut self, _ctx: &mut Context) -> GameResult {
+
+        match &self.game_state {
+            GameState::BattleState => {
+                
+                self.friendly_party.update_action_points();
+                self.curr_battle.player_uis
+                    .iter_mut()
+                    .for_each(|(ch_id,bars)| {
+                        bars.health_bar.update(_ctx, self.friendly_party.get_member_by_id(*ch_id).health as f32, HERO_HP_COLOR);
+                        bars.mana_bar.update(_ctx, self.friendly_party.get_member_by_id(*ch_id).stats.defense as f32, HERO_MP_COLOR);
+                        bars.action_bar.update(_ctx, self.friendly_party.get_member_by_id(*ch_id).action_points as f32, HERO_AP_COLOR);
+                    });
+
+                self.curr_battle.enemy_party.update_action_points();
+                
+            },
+            GameState::OverworldState => {}
+        }
+
+        if _ctx.keyboard.is_key_just_pressed(KeyCode::Down) {
+            self.curr_battle.action_menu.change_selection(1);
+            self.curr_battle.action_menu.load_menu();
+        }
+        if _ctx.keyboard.is_key_just_pressed(KeyCode::Up) {
+            self.curr_battle.action_menu.change_selection(-1);
+            self.curr_battle.action_menu.load_menu();
+        }
+
+        if _ctx.keyboard.is_key_just_pressed(KeyCode::Z) {
+
+            self.curr_battle.action_menu.select();
+            self.curr_battle.action_menu.load_menu();
+
+            // TODO: check if it's a character name and if the character is ready to act
+            let curr_selection : String = self.curr_battle.action_menu.get_curr_data();
+
+            match self.curr_battle.action_menu.menu_state {
+                MenuState::ChooseActor => {
+                    if self.friendly_party.is_character_name(&curr_selection) {
+
+                        if self.friendly_party.characters.iter().find(|ch| ch.name == *curr_selection).unwrap().action_points_charged() {
+                            self.curr_battle.current_action.actor(curr_selection);
+                            self.curr_battle.action_menu.menu_state = MenuState::ChooseActionType;
+                        } else {
+                            self.curr_battle.action_menu.reset();
+                            self.curr_battle.action_menu.load_menu();
+                            println!("Cannot act yet!, {}", self.friendly_party.characters.iter().find(|ch| ch.name == *curr_selection).unwrap().action_points);
+                        }
+
+                    } 
+                },
+                MenuState::ChooseActionType => {
+                    if curr_selection == "Fight" {
+                        self.curr_battle.current_action.action_type(ActionType::Fight);
+                        self.curr_battle.action_menu.menu_state = MenuState::ChooseAbility;
+                    } else if curr_selection == "Guard" {
+                        self.curr_battle.current_action.action_type(ActionType::Guard);
+                        self.curr_battle.action_menu.reset();
+                        self.curr_battle.action_menu.load_menu();
+                        let complete_action = self.curr_battle.current_action.build(&self.abilities);
+                        complete_action.resolve(&mut self.friendly_party, &mut self.curr_battle.enemy_party, &mut self.curr_battle.dialogue_box);
+                        // self.friendly_party.characters.iter_mut().find(|ch| ch.name == complete_action.actor).unwrap().use_action_points();
+                        self.curr_battle.action_menu.menu_state = MenuState::ChooseActor;
+                    } else if curr_selection == "Item" {
+                        self.curr_battle.current_action.action_type(ActionType::Item);
+                        self.curr_battle.action_menu.menu_state = MenuState::ChooseTarget;
+                    } else if curr_selection == "Flee" {
+                        self.curr_battle.current_action.action_type(ActionType::Flee);
+                        self.curr_battle.action_menu.reset();
+                        self.curr_battle.action_menu.load_menu();
+                        self.curr_battle.action_menu.menu_state = MenuState::ChooseActor;
+                    }
+
+                },
+                MenuState::ChooseAbility => {
+                    if self.player_abilities.iter().any(|ab_name| *ab_name == curr_selection) {
+                        self.curr_battle.current_action.ability(curr_selection);
+                    }
+                    self.curr_battle.action_menu.menu_state = MenuState::ChooseTarget;
+                },
+                MenuState::ChooseTarget => {
+                    if self.curr_battle.character_names.iter().any(|ch_name| *ch_name == curr_selection) {
+                        self.curr_battle.current_action.target(curr_selection);
+                    }
+                    self.curr_battle.action_menu.reset();
+                    self.curr_battle.action_menu.load_menu();
+
+                    // Works!!
+                    // Action gets built and resolved
+                    let complete_action = self.curr_battle.current_action.build(&self.abilities); 
+
+                    self.friendly_party.characters.iter_mut().find(|ch| ch.name == complete_action.actor).unwrap().use_action_points();
+                
+                    complete_action.resolve(&mut self.friendly_party, &mut self.curr_battle.enemy_party, &mut self.curr_battle.dialogue_box);
+
+                    println!("Orc stats: {:?}", self.curr_battle.enemy_party.characters.iter().find(|ch| ch.name == "orc_2").unwrap().health);
+
+                    self.curr_battle.action_menu.menu_state = MenuState::ChooseActor;
+                }
+            }
+        }
+
+        if let Some(ch) = self.curr_battle.enemy_party.characters.iter_mut().find(|ch| ch.action_points == MAX_ACTION_POINTS) {
+            println!("{} the Destroyer", ch.name);
+            ch.use_action_points();
+            let mut rng = rand::rng();
+            let enemy_action = PendingAction::new()
+                .actor(ch.name.clone())
+                .action_type(ActionType::Fight)
+                .ability(ch.abilities.choose(&mut rng).unwrap().clone()) 
+                .target(self.friendly_party.characters.choose(&mut rng).unwrap().name.clone())
+                .build(&self.abilities)
+                .resolve(&mut self.curr_battle.enemy_party, &mut self.friendly_party, &mut self.curr_battle.dialogue_box);
+
+        }
+
+        if _ctx.keyboard.is_key_just_pressed(KeyCode::X) {
+            self.curr_battle.action_menu.go_back();
+            self.curr_battle.action_menu.load_menu();
+
+            match self.curr_battle.action_menu.menu_state {
+                MenuState::ChooseTarget => {
+                    self.curr_battle.action_menu.menu_state = MenuState::ChooseAbility;
+                }
+                MenuState::ChooseAbility => {
+                    self.curr_battle.action_menu.menu_state = MenuState::ChooseActionType;
+                },
+                MenuState::ChooseActionType => {
+                    self.curr_battle.action_menu.menu_state = MenuState::ChooseActor;
+                },
+                MenuState::ChooseActor => {},
+            }
+        }
+
+        
+
+        Ok(())
+    }
+
+    fn draw(&mut self, ctx: &mut Context) -> GameResult {
+
+        let mut canvas =
+            graphics::Canvas::from_frame(ctx, graphics::Color::from([0.1, 0.2, 0.3, 1.0]));
+
+        let image = self.assets.character_images.get("battle_bg").unwrap(); 
+        image.draw(&mut canvas, DrawParam::default());
+
+        match &self.game_state {
+            GameState::BattleState => {
+
+                canvas.set_screen_coordinates(Rect::new(0.0, 0.0, 500.0, 500.0));
+                canvas.set_sampler(graphics::Sampler::nearest_clamp());
+
+                self.friendly_party.draw(ctx, &mut canvas, &self.assets);
+                self.curr_battle.enemy_party.draw(ctx, &mut canvas, &self.assets);
+
+                self.curr_battle.action_menu.draw(&mut canvas, DrawParam::default());
+                draw_character_uis(&mut canvas, &self.curr_battle.player_uis);
+                self.curr_battle.dialogue_box.draw(&mut canvas, DrawParam::default());
+
+                canvas.finish(ctx)?;
+            },
+            GameState::OverworldState => {
+                canvas.finish(ctx)?;
+            }
+        }
+
+        Ok(())
+    }
+}
