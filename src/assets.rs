@@ -11,13 +11,10 @@ pub struct Assets {
     pub images: HashMap<String, Image>,
 }
 
-
 impl Assets {
     pub fn new(ctx: &Context) -> GameResult<Assets> {
 
         let mut map : HashMap<String, Image> = HashMap::new();
-
-        // let character_image = Image::from_path(ctx, "/char_1.png")?;
 
         let paths = fs::read_dir("./resources").unwrap();
         for path in paths {
@@ -35,24 +32,3 @@ impl Assets {
         )
     }
 }
-
-// pub fn load_char_config() {
-//     let file = File::open("src/char_config.json").expect("Character config file not found.");
-//     let reader = BufReader::new(file);
-
-//     let v : Value = serde_json::from_reader(reader).expect("Bad JSON formatting");
-
-//     dbg!(&v);
-
-// }
-
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-
-//     #[test]
-//     fn test_load_char_config() {
-//         load_char_config();
-//     }
-
-// }

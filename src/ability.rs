@@ -67,21 +67,3 @@ impl Ability {
         }
     }
 }
-
-// pub fn load_abilities() {
-//     let file = File::open("src/abilities.json").unwrap();
-//     let rdr = BufReader::new(file);
-
-//     let abilities : Vec<Ability> = serde_json::from_reader(rdr).expect("Bad formatting");
-//     dbg!(&abilities);
-// }
-
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-
-//     #[test]
-//     fn load_abilities_test() {
-//         load_abilities();
-//     }
-// }
