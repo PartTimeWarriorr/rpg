@@ -50,6 +50,7 @@ impl Action {
                         // TODO
                     },
                     AbilityType::Buff => {
+                        // TODO: Fix panic when targeting self
                         let actor_index = friendly_party.characters.iter().position(|ch| ch.name == self.actor).unwrap();
                         let target_index = friendly_party.characters.iter().position(|ch| ch.name == self.target.clone().unwrap()).unwrap();
                         let (actor_ch, target_ch) = friendly_party.get_two_members_mut(actor_index, target_index);
@@ -60,6 +61,7 @@ impl Action {
                         dialogue_box.notify(&ability.message.replace("{}", &actor_ch.name));
                     },
                     AbilityType::Heal => {
+                        // TODO: Fix panic when targeting self
                         let actor_index = friendly_party.characters.iter().position(|ch| ch.name == self.actor).unwrap();
                         let target_index = friendly_party.characters.iter().position(|ch| ch.name == self.target.clone().unwrap()).unwrap();
                         let (actor_ch, target_ch) = friendly_party.get_two_members_mut(actor_index, target_index);

@@ -5,7 +5,7 @@
             "name" : "orc",
             "state" : "Default",
             "abilities" : [
-                "Swing"
+                "Enrage"
             ],
             "sprite" : "enem_1",
             "is_friendly" : false,
@@ -13,7 +13,7 @@
                 "max_health" : 500,
                 "attack" : 2,
                 "defense" : 3,
-                "speed" : 0
+                "speed" : 10
             }
         },
         {

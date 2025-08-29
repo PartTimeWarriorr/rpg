@@ -22,6 +22,8 @@ enum GameState {
 
 struct Battle {
     pub character_names: Vec<String>,
+    pub player_names: Vec<String>,
+    pub enemy_names: Vec<String>,
     pub enemy_party: Party,
     pub action_menu: Ui,
     pub current_action: PendingAction,
@@ -128,6 +130,8 @@ impl MainState {
 
         let b = Battle {
             character_names: character_names.clone(),
+            player_names: player_names.clone(),
+            enemy_names: enemy_names.clone(),
             enemy_party,
             action_menu: Battle::load_action_menu(&friendly_party, &character_names, &player_names, &enemy_names, &abilities),
             current_action: Action::new(),
@@ -268,15 +272,33 @@ impl MainState {
     }
 
     fn enemy_action(&mut self, _ctx: &mut Context) {
+
+        // If an enemy is ready to act
         if let Some(ch) = self.curr_battle.enemy_party.characters.iter_mut().find(|ch| ch.action_points == MAX_ACTION_POINTS) {
             println!("{} the Destroyer", ch.name);
             ch.use_action_points();
+
+            // Use rng to choose random ability
             let mut rng = rand::rng();
+            let ab = ch.abilities
+                .choose(&mut rng)
+                .unwrap()
+                .clone();
+
+            let t = match self.abilities.iter().find(|a| a.name == ab).unwrap().ability_type {
+                AbilityType::Damage | AbilityType::Status => {
+                    self.curr_battle.player_names.choose(&mut rng).unwrap()
+                },
+                AbilityType::Heal | AbilityType::Buff => {
+                    self.curr_battle.enemy_names.choose(&mut rng).unwrap()
+                }
+            };
+
             let enemy_action = PendingAction::new()
                 .actor(ch.name.clone())
                 .action_type(ActionType::Fight)
-                .ability(ch.abilities.choose(&mut rng).unwrap().clone()) 
-                .target(self.friendly_party.characters.choose(&mut rng).unwrap().name.clone())
+                .ability(ab.clone()) 
+                .target(t.clone())
                 .build(&self.abilities)
                 .resolve(&mut self.curr_battle.enemy_party, &mut self.friendly_party, &mut self.curr_battle.dialogue_box);
 
