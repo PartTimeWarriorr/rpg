@@ -6,7 +6,7 @@ use std::{
 };
 
 pub fn load_friendly_party() -> Vec<Character> {
-    let file = File::open("src/friendly_party.json").expect("Config file not found: friendly_party");
+    let file = File::open("config/friendly_party.json").expect("Config file not found: friendly_party");
     let rdr = BufReader::new(file);
 
     match serde_json::from_reader(rdr) {
@@ -16,7 +16,7 @@ pub fn load_friendly_party() -> Vec<Character> {
 }
 
 pub fn load_enemies() ->  Vec<Vec<Character>> {
-    let file = File::open("src/enemies.json").expect("Config file not found: enemies");
+    let file = File::open("config/enemies.json").expect("Config file not found: enemies");
     let rdr = BufReader::new(file);
 
     match serde_json::from_reader(rdr) {
@@ -26,7 +26,7 @@ pub fn load_enemies() ->  Vec<Vec<Character>> {
 }
 
 pub fn load_abilities() -> Vec<Ability> {
-    let file = File::open("src/abilities.json").expect("Config file not found: abilities");
+    let file = File::open("config/abilities.json").expect("Config file not found: abilities");
     let rdr = BufReader::new(file);
 
     match serde_json::from_reader(rdr) {

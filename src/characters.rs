@@ -243,7 +243,7 @@ impl Character {
     pub fn draw(&self,ctx : &Context, canvas: &mut graphics::Canvas, assets: &Assets, position: Point2<f32>) {
 
 
-        canvas.draw(assets.character_images.get(&self.sprite).unwrap(), position);
+        canvas.draw(assets.images.get(&self.sprite).unwrap(), position);
     }
 
     pub fn action_points_charged(&self) -> bool {
