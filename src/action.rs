@@ -25,16 +25,18 @@ impl Action {
     }
 
     pub fn resolve(self, friendly_party: &mut Party, enemy_party: &mut Party, dialogue_box: &mut DialogueBox) {
-        let actor_ch = friendly_party.characters.iter_mut().find(|ch| ch.name == self.actor).unwrap();
 
         match self.action_type {
             ActionType::Fight => {
-                actor_ch.state = CharacterState::Default;
-                let target_ch = enemy_party.characters.iter_mut().find(|ch| ch.name == self.target.clone().unwrap()).unwrap();
+
                 let ability = self.ability.unwrap();
 
                 match ability.ability_type {
                     AbilityType::Damage => {
+                        let actor_ch = friendly_party.characters.iter_mut().find(|ch| ch.name == self.actor).unwrap();
+                        actor_ch.state = CharacterState::Default;
+                        let target_ch = enemy_party.characters.iter_mut().find(|ch| ch.name == self.target.clone().unwrap()).unwrap();
+
                         let mut attack_power = actor_ch.calculate_attack(); 
                         attack_power += ability.power;
                         target_ch.take_damage(attack_power);
@@ -43,32 +45,44 @@ impl Action {
                         dialogue_box.notify(&format!("{} takes a hit!", target_ch.name));
                         println!("{} health now", &target_ch.health);
                     },
+                    AbilityType::Status => {
+                        let target_ch = enemy_party.characters.iter_mut().find(|ch| ch.name == self.target.clone().unwrap()).unwrap();
+                        // TODO
+                    },
                     AbilityType::Buff => {
+                        let actor_index = friendly_party.characters.iter().position(|ch| ch.name == self.actor).unwrap();
+                        let target_index = friendly_party.characters.iter().position(|ch| ch.name == self.target.clone().unwrap()).unwrap();
+                        let (actor_ch, target_ch) = friendly_party.get_two_members_mut(actor_index, target_index);
+                        actor_ch.state = CharacterState::Default;
                         let b = ability.buff.expect("Expected buff variant");
                         target_ch.buffs.push(b);
 
                         dialogue_box.notify(&ability.message.replace("{}", &actor_ch.name));
                     },
                     AbilityType::Heal => {
+                        let actor_index = friendly_party.characters.iter().position(|ch| ch.name == self.actor).unwrap();
+                        let target_index = friendly_party.characters.iter().position(|ch| ch.name == self.target.clone().unwrap()).unwrap();
+                        let (actor_ch, target_ch) = friendly_party.get_two_members_mut(actor_index, target_index);
+                        actor_ch.state = CharacterState::Default;
                         target_ch.heal(ability.power);
                         dialogue_box.notify(&ability.message.replace("{}", &actor_ch.name));
-                    },
-                    AbilityType::Status => {
-                        // TODO
                     }
                 }
             },
             ActionType::Guard => {
+                let actor_ch = friendly_party.characters.iter_mut().find(|ch| ch.name == self.actor).unwrap();
                 actor_ch.state = CharacterState::Guarding;
                 dialogue_box.notify(&format!("{} is guarding!", actor_ch.name));
             },
             ActionType::Item => {
                 // use_item
+                let actor_ch = friendly_party.characters.iter_mut().find(|ch| ch.name == self.actor).unwrap();
                 actor_ch.state = CharacterState::Default;
                 dialogue_box.notify(&format!("{} used an item!", actor_ch.name));
             },
             ActionType::Flee => {
                 // flee
+                let actor_ch = friendly_party.characters.iter_mut().find(|ch| ch.name == self.actor).unwrap();
                 actor_ch.state = CharacterState::Default;
                 dialogue_box.notify(&format!("{} is trying to flee!", actor_ch.name));
             }
@@ -122,10 +136,5 @@ impl PendingAction {
                 None
             }
         } 
-        // Action { action_type: self.action_type.unwrap(), actor: self.actor.unwrap(), target: self.target.unwrap(), ability: Ability::new(String::from("s")) }
     }
 }
-
-// pub fn create_new_action(actor: CharacterId, target: CharacterId, ability: Ability) {
-// }
-

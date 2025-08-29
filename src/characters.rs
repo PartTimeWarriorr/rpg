@@ -104,6 +104,19 @@ impl Party {
         self.characters.iter().any(|ch| ch.name == *name)
     }
 
+    pub fn get_two_members_mut(&mut self, actor_index: usize, target_index: usize) -> (&mut Character, &mut Character) {
+
+        if actor_index < target_index {
+            let (left, right) = self.characters.split_at_mut(target_index);
+            (&mut left[actor_index], &mut right[0])
+        } else if actor_index > target_index {
+            let (left, right) = self.characters.split_at_mut(actor_index);
+            (&mut right[0], &mut left[target_index])
+        } else {
+            panic!("Can't target myself :((");
+        }
+
+    }
 }
 
 pub const MAX_ACTION_POINTS : u32 = 500;

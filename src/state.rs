@@ -41,7 +41,6 @@ impl Battle {
             menu.insert_at_path(&["root"], &hero_name);
 
             for action in vec!["Fight", "Guard", "Item", "Flee"] {
-                // menu.insert_at(hero_name, action);
                 menu.insert_at_path(&["root", &hero_name], action);
             }
 
@@ -151,82 +150,6 @@ impl MainState {
                 player_abilities,
             }
         )
-
-        // let assets = Assets::new(ctx)?;
-        
-
-        // let fp = Party::new(load_friendly_party(), FRIENDLY_PARTY_POSITION);
-        // let all_enemies = load_enemies();
-        // let ep = Party::new(all_enemies.get(0).unwrap().clone(), ENEMY_PARTY_POSITION);
-
-        // let player_names : Vec<String> = fp.characters.iter().map(|ch| ch.name.clone()).collect();
-        // let enemy_names : Vec<String> = ep.characters.iter().map(|ch| ch.name.clone()).collect();
-
-        // let abilities = load_abilities();
-
-        // let player_abilities = fp.characters
-        //     .iter()
-        //     .flat_map(|ch| ch.abilities.clone())
-        //     .collect();
-
-        // let character_names = fp.characters
-        //     .iter()
-        //     .chain(&ep.characters)
-        //     .map(|ch| ch.name.clone())
-        //     .collect::<Vec<String>>();
-
-        // let game_state = GameState::BattleState;
-
-        // let mut menu = Menu::new();
-
-        // for hero_name in fp.characters.iter().map(|ch| ch.name.clone()) {
-        //     menu.insert_at_path(&["root"], &hero_name);
-
-        //     for action in vec!["Fight", "Guard", "Item", "Flee"] {
-        //         // menu.insert_at(hero_name, action);
-        //         menu.insert_at_path(&["root", &hero_name], action);
-        //     }
-
-        //     for ch_name in &character_names {
-        //         menu.insert_at_path(&["root", &hero_name, "Item"], &ch_name);
-        //     } 
-
-        //     for ability in fp.characters.iter().find(|ch| ch.name == hero_name).unwrap().abilities.clone() {
-        //         menu.insert_at_path(&["root", &hero_name, "Fight"], &ability);
-                
-        //         let current_ability = abilities.iter().find(|ab| ab.name == ability).expect("Unknown ability");
-
-        //         match current_ability.ability_type {
-        //             AbilityType::Damage | AbilityType::Status => {
-        //                 // Damage and Status abilities have only enemies as targets
-        //                 for ch_name in &enemy_names {
-        //                     menu.insert_at_path(&["root", &hero_name, "Fight", &ability], &ch_name);
-        //                 }
-        //             },
-        //             AbilityType::Heal | AbilityType::Buff => {
-        //                 // Heal and Buff abilities have only friends as targets
-        //                 for ch_name in &player_names {
-        //                     menu.insert_at_path(&["root", &hero_name, "Fight", &ability], &ch_name);
-        //                 }
-        //             }
-        //         }
-        //     }
-        // }
-
-
-        // let mut ui = Ui::new(menu);
-        // ui.load_menu();
-        
-        // let character_uis = fp.characters
-        //     .iter()
-        //     .map(|ch| (ch.id, Bars::new(ctx)))
-        //     .collect::<OrderMap<CharacterId, Bars>>();
-
-        // let current_action = Action::new();
-
-        // let dialogue_box = DialogueBox::new();
-
-        // Ok(MainState {assets, friendly_party: fp, enemy_party: ep, game_state, ui, character_uis, current_action, player_abilities, character_names, abilities, dialogue_box})
     }
 
 }
@@ -325,10 +248,13 @@ impl event::EventHandler<ggez::GameError> for MainState {
                     let complete_action = self.curr_battle.current_action.build(&self.abilities); 
 
                     self.friendly_party.characters.iter_mut().find(|ch| ch.name == complete_action.actor).unwrap().use_action_points();
+
                 
                     complete_action.resolve(&mut self.friendly_party, &mut self.curr_battle.enemy_party, &mut self.curr_battle.dialogue_box);
 
-                    println!("Orc stats: {:?}", self.curr_battle.enemy_party.characters.iter().find(|ch| ch.name == "orc_2").unwrap().health);
+                    dbg!(&self.friendly_party.characters.iter().find(|ch| ch.name == "hero"));
+                    dbg!(&self.curr_battle.enemy_party.characters.iter().find(|ch| ch.name == "orc"));
+
 
                     self.curr_battle.action_menu.menu_state = MenuState::ChooseActor;
                 }
