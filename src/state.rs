@@ -1,5 +1,5 @@
 use ggez::{
-    context::Has, event, graphics::{self, Canvas, Color, DrawParam, Drawable, Image, Rect}, input::{self, keyboard::KeyCode, }, mint::{Point2, Vector2}, timer::TimeContext, Context, GameError, GameResult
+    context::Has, event, graphics::{self, Canvas, Color, DrawParam, Drawable, Image, Rect, Text}, input::{self, keyboard::KeyCode, }, mint::{Point2, Vector2}, timer::TimeContext, Context, GameError, GameResult
 };
 
 use rand::seq::{IndexedRandom, IteratorRandom};
@@ -17,7 +17,9 @@ use ordermap::OrderMap;
 
 enum GameState {
     OverworldState,
-    BattleState
+    BattleState,
+    WinState,
+    LoseState,
 }
 
 struct Battle {
@@ -32,6 +34,38 @@ struct Battle {
 }
 
 impl Battle {
+
+    pub fn new(friendly_party: &Party, all_enemies: &mut Vec<Vec<Character>>, ctx: &mut Context, abilities: &Vec<Ability>) -> Self {
+
+        let enemy_party = Party::new(all_enemies.remove(0).clone(), ENEMY_PARTY_POSITION);
+
+        let character_names = friendly_party.characters
+            .iter()
+            .chain(&enemy_party.characters)
+            .map(|ch| ch.name.clone())
+            .collect::<Vec<String>>();
+
+        let player_uis = friendly_party.characters
+            .iter()
+            .map(|ch| (ch.id, Bars::new(ctx)))
+            .collect::<OrderMap<CharacterId, Bars>>();
+
+
+        let player_names : Vec<String> = friendly_party.characters.iter().map(|ch| ch.name.clone()).collect();
+        let enemy_names : Vec<String> = enemy_party.characters.iter().map(|ch| ch.name.clone()).collect();
+
+        Battle {
+            character_names: character_names.clone(),
+            player_names: player_names.clone(),
+            enemy_names: enemy_names.clone(),
+            enemy_party,
+            action_menu: Battle::load_action_menu(&friendly_party, &character_names, &player_names, &enemy_names, &abilities),
+            current_action: Action::new(),
+            player_uis,
+            dialogue_box: DialogueBox::new(),
+        }
+    }
+
     pub fn load_action_menu(fp: &Party, character_names: &Vec<String>, player_names: &Vec<String>, enemy_names: &Vec<String>, abilities: &Vec<Ability>) -> Ui {
 
         let mut menu = Menu::new();
@@ -95,6 +129,8 @@ pub struct MainState {
     overworld: Overworld,
     friendly_party: Party,
     player_abilities: Vec<String>,
+    win_message: Text,
+    lose_message: Text,
 }
 
 const FRIENDLY_PARTY_POSITION : Point2<f32> = Point2 { x : 100.0, y: 200.0}; 
@@ -105,52 +141,37 @@ impl MainState {
     pub fn new(ctx: &mut Context) -> GameResult<MainState> {
 
         let abilities = load_abilities();
-        let all_enemies = load_enemies(); 
+        let mut all_enemies = load_enemies(); 
         let friendly_party = Party::new(load_friendly_party(), FRIENDLY_PARTY_POSITION);
-        let enemy_party = Party::new(all_enemies.get(0).unwrap().clone(), ENEMY_PARTY_POSITION);
-
-        let character_names = friendly_party.characters
-            .iter()
-            .chain(&enemy_party.characters)
-            .map(|ch| ch.name.clone())
-            .collect::<Vec<String>>();
-
-        let player_uis = friendly_party.characters
-            .iter()
-            .map(|ch| (ch.id, Bars::new(ctx)))
-            .collect::<OrderMap<CharacterId, Bars>>();
 
         let player_abilities = friendly_party.characters
             .iter()
             .flat_map(|ch| ch.abilities.clone())
             .collect();
 
-        let player_names : Vec<String> = friendly_party.characters.iter().map(|ch| ch.name.clone()).collect();
-        let enemy_names : Vec<String> = enemy_party.characters.iter().map(|ch| ch.name.clone()).collect();
-
-        let b = Battle {
-            character_names: character_names.clone(),
-            player_names: player_names.clone(),
-            enemy_names: enemy_names.clone(),
-            enemy_party,
-            action_menu: Battle::load_action_menu(&friendly_party, &character_names, &player_names, &enemy_names, &abilities),
-            current_action: Action::new(),
-            player_uis,
-            dialogue_box: DialogueBox::new(),
-        };
-
+        let battle = Battle::new(&friendly_party, &mut all_enemies, ctx, &abilities);
+        
         Ok(
             MainState {
                 assets: Assets::new(ctx)?,
                 game_state: GameState::BattleState,
                 abilities,
                 all_enemies,
-                curr_battle: b,
+                curr_battle: battle,
                 overworld: Overworld::new(),
                 friendly_party,
                 player_abilities,
+                win_message: Text::new("You win! Press Enter for next battle."),
+                lose_message: Text::new("All your party members got killed. Game over! (Press Esc to exit)")
             }
         )
+    }
+
+    pub fn load_next_battle(&mut self, ctx: &mut Context) {
+        
+        let next_battle = Battle::new(&self.friendly_party, &mut self.all_enemies, ctx, &self.abilities);
+        self.curr_battle = next_battle;
+
     }
 
     fn get_dead_characters(&self) -> Vec<Character> {
@@ -385,6 +406,27 @@ impl event::EventHandler<ggez::GameError> for MainState {
             },
             GameState::OverworldState => {
 
+            },
+            GameState::WinState => {
+
+                if _ctx.keyboard.is_key_just_pressed(KeyCode::Return) {
+
+                    if self.all_enemies.is_empty() {
+
+                        self.win_message = Text::new("Nevermind, it looks like you have no more enemies. You beat the game!");
+
+                    } else {
+
+                        self.game_state = GameState::BattleState;
+                        self.load_next_battle(_ctx);
+
+                    }
+
+                }
+
+            },
+            GameState::LoseState => {
+
             }
         }
 
@@ -415,6 +457,14 @@ impl event::EventHandler<ggez::GameError> for MainState {
                 canvas.finish(ctx)?;
             },
             GameState::OverworldState => {
+                canvas.finish(ctx)?;
+            },
+            GameState::WinState => {
+                self.win_message.draw(&mut canvas, DrawParam::default().dest(Point2{x : 250.0, y : 250.0}));
+                canvas.finish(ctx)?;
+            },
+            GameState::LoseState => {
+                self.lose_message.draw(&mut canvas, DrawParam::default().dest(Point2{x : 250.0, y : 250.0}));
                 canvas.finish(ctx)?;
             }
         }
