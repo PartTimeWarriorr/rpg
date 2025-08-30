@@ -167,7 +167,7 @@ impl MainState {
         )
     }
 
-    pub fn load_next_battle(&mut self, ctx: &mut Context) {
+    fn load_next_battle(&mut self, ctx: &mut Context) {
         
         let next_battle = Battle::new(&self.friendly_party, &mut self.all_enemies, ctx, &self.abilities);
         self.curr_battle = next_battle;
@@ -211,6 +211,14 @@ impl MainState {
         self.curr_battle.player_uis
             .retain(|k, v| !dead_ids.contains(k));
 
+    }
+
+    fn friendly_party_died(&self) -> bool {
+        self.friendly_party.characters.is_empty()
+    }
+
+    fn enemy_party_died(&self) -> bool {
+        self.curr_battle.enemy_party.characters.is_empty()
     }
 
     fn update_player_uis(&mut self, _ctx: &mut Context) {
@@ -392,6 +400,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
         match &self.game_state {
             GameState::BattleState => {
 
+
                 self.friendly_party.update_action_points();
                 self.curr_battle.enemy_party.update_action_points();
 
@@ -403,6 +412,14 @@ impl event::EventHandler<ggez::GameError> for MainState {
 
                 // AI 
                 self.enemy_action(_ctx);
+
+                if self.enemy_party_died() {
+                    self.game_state = GameState::WinState;
+                }
+
+                if self.friendly_party_died() {
+                    self.game_state = GameState::LoseState;
+                }
             },
             GameState::OverworldState => {
 
@@ -460,11 +477,11 @@ impl event::EventHandler<ggez::GameError> for MainState {
                 canvas.finish(ctx)?;
             },
             GameState::WinState => {
-                self.win_message.draw(&mut canvas, DrawParam::default().dest(Point2{x : 250.0, y : 250.0}));
+                self.win_message.draw(&mut canvas, DrawParam::default().dest(Point2{x : 150.0, y : 250.0}));
                 canvas.finish(ctx)?;
             },
             GameState::LoseState => {
-                self.lose_message.draw(&mut canvas, DrawParam::default().dest(Point2{x : 250.0, y : 250.0}));
+                self.lose_message.draw(&mut canvas, DrawParam::default().dest(Point2{x : 150.0, y : 250.0}));
                 canvas.finish(ctx)?;
             }
         }

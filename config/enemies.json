@@ -13,7 +13,7 @@
                 "max_health" : 500,
                 "attack" : 2,
                 "defense" : 3,
-                "speed" : 1
+                "speed" : 10
             }
         },
         {
@@ -22,6 +22,24 @@
             "state" : "Default",
             "abilities" : [
                 "Swing"
+            ],
+            "sprite" : "enem_2",
+            "is_friendly" : false,
+            "stats" : {
+                "max_health" : 500,
+                "attack" : 20,
+                "defense" : 3,
+                "speed" : 10
+            }
+        }
+    ],
+    [
+        {
+            "id" : 5,
+            "name" : "epic_orc",
+            "state" : "Default",
+            "abilities" : [
+                "Enrage"
             ],
             "sprite" : "enem_2",
             "is_friendly" : false,
