@@ -177,7 +177,6 @@ pub struct Character {
 
 
 impl Character {
-    // pub fn new(id: CharacterId, name: &str, abilities: Vec<String>, sprite: &str, stats: Stats) -> Self {
     pub fn new(id: CharacterId, name: &str, abilities: Vec<String>, sprite: &str, stats: Stats) -> Self {
         Character {
             id,
@@ -199,6 +198,7 @@ impl Character {
     }
 
     pub fn calculate_attack(&self) -> u32 {
+
         let from_buffs : u32 = self.buffs
             .iter()
             .filter_map(|b| {
@@ -210,9 +210,11 @@ impl Character {
             .sum();
             
         self.stats.attack + from_buffs
+
     }
 
     pub fn calculate_defense(&self) -> u32 {
+
         let from_buffs : u32 = self.buffs
             .iter()
             .filter_map(|b| {
@@ -224,9 +226,11 @@ impl Character {
             .sum();
 
         self.stats.defense + from_buffs
+
     }
 
     pub fn calculate_speed(&self) -> u32 {
+
         let from_buffs : u32 = self.buffs
             .iter()
             .filter_map(|b| {
@@ -238,6 +242,7 @@ impl Character {
             .sum();
 
         self.stats.speed + from_buffs
+
     }
 
     pub fn draw(&self,ctx : &Context, canvas: &mut graphics::Canvas, assets: &Assets, position: Point2<f32>) {

@@ -131,6 +131,7 @@ pub struct MainState {
     player_abilities: Vec<String>,
     win_message: Text,
     lose_message: Text,
+    error_message: Text,
 }
 
 const FRIENDLY_PARTY_POSITION : Point2<f32> = Point2 { x : 100.0, y: 200.0}; 
@@ -162,7 +163,8 @@ impl MainState {
                 friendly_party,
                 player_abilities,
                 win_message: Text::new("You win! Press Enter for next battle."),
-                lose_message: Text::new("All your party members got killed. Game over! (Press Esc to exit)")
+                lose_message: Text::new("All your party members got killed. Game over! (Press Esc to exit)"),
+                error_message: Text::new(""),
             }
         )
     }
@@ -262,31 +264,41 @@ impl MainState {
                         } else {
                             self.curr_battle.action_menu.reset();
                             self.curr_battle.action_menu.load_menu();
-                            println!("Cannot act yet!, {}", self.friendly_party.characters.iter().find(|ch| ch.name == *curr_selection).unwrap().action_points);
                         }
 
                     } 
                 },
                 MenuState::ChooseActionType => {
+
                     if curr_selection == "Fight" {
+
                         self.curr_battle.current_action.action_type(ActionType::Fight);
                         self.curr_battle.action_menu.menu_state = MenuState::ChooseAbility;
+
                     } else if curr_selection == "Guard" {
+
                         self.curr_battle.current_action.action_type(ActionType::Guard);
                         self.curr_battle.action_menu.reset();
                         self.curr_battle.action_menu.load_menu();
+
                         let complete_action = self.curr_battle.current_action.build(&self.abilities);
                         self.friendly_party.characters.iter_mut().find(|ch| ch.name == complete_action.actor).unwrap().use_action_points();
                         complete_action.resolve(&mut self.friendly_party, &mut self.curr_battle.enemy_party, &mut self.curr_battle.dialogue_box);
+
                         self.curr_battle.action_menu.menu_state = MenuState::ChooseActor;
+
                     } else if curr_selection == "Item" {
+
                         self.curr_battle.current_action.action_type(ActionType::Item);
                         self.curr_battle.action_menu.menu_state = MenuState::ChooseTarget;
+
                     } else if curr_selection == "Flee" {
+
                         self.curr_battle.current_action.action_type(ActionType::Flee);
                         self.curr_battle.action_menu.reset();
                         self.curr_battle.action_menu.load_menu();
                         self.curr_battle.action_menu.menu_state = MenuState::ChooseActor;
+
                     }
 
                 },
@@ -311,9 +323,6 @@ impl MainState {
                     complete_action.resolve(&mut self.friendly_party, &mut self.curr_battle.enemy_party, &mut self.curr_battle.dialogue_box);
 
                     self.cleanup_dead_characters();
-                    // dbg!(&self.friendly_party.characters.iter().find(|ch| ch.name == "hero"));
-                    // dbg!(&self.curr_battle.enemy_party.characters.iter().find(|ch| ch.name == "orc"));
-
 
                     self.curr_battle.action_menu.menu_state = MenuState::ChooseActor;
                 }
@@ -340,7 +349,7 @@ impl MainState {
         }
     }
 
-    fn enemy_action(&mut self, _ctx: &mut Context) {
+    fn enemy_action(&mut self, _ctx: &mut Context) -> Result<(), String> {
 
         // Because borrow-checker
         let enemy_names = self.curr_battle.enemy_party.characters
@@ -350,7 +359,6 @@ impl MainState {
 
         // If an enemy is ready to act
         if let Some(ch) = self.curr_battle.enemy_party.characters.iter_mut().find(|ch| ch.action_points == MAX_ACTION_POINTS) {
-            println!("{} the Destroyer", ch.name);
             ch.use_action_points();
 
             // Use rng to choose random ability
@@ -360,7 +368,15 @@ impl MainState {
                 .unwrap()
                 .clone();
 
-            let t = match self.abilities.iter().find(|a| a.name == ab).unwrap().ability_type {
+            // Return error if ability name is unknown
+            let valid_ability = match self.abilities.iter().find(|a| a.name == ab) {
+                Some(a) => a.clone(),
+                None => {
+                    return Err("Ability not found".to_owned());
+                } 
+            };
+
+            let t = match valid_ability.ability_type {
                 AbilityType::Damage | AbilityType::Status => {
                     self.friendly_party.characters
                         .iter()
@@ -388,7 +404,11 @@ impl MainState {
 
 
             self.cleanup_dead_characters();
+            
+            Ok(())
 
+        } else {
+            Ok(())
         }
     }
 
@@ -411,7 +431,9 @@ impl event::EventHandler<ggez::GameError> for MainState {
                 self.select_player_action(_ctx);
 
                 // AI 
-                self.enemy_action(_ctx);
+                if let Err(err) = self.enemy_action(_ctx) {
+                    println!("Error on enemy action: {}", err);
+                }
 
                 if self.enemy_party_died() {
                     self.game_state = GameState::WinState;

@@ -33,6 +33,7 @@ impl Action {
 
                 match ability.ability_type {
                     AbilityType::Damage => {
+
                         let actor_ch = friendly_party.characters.iter_mut().find(|ch| ch.name == self.actor).unwrap();
                         actor_ch.state = CharacterState::Default;
                         let target_ch = enemy_party.characters.iter_mut().find(|ch| ch.name == self.target.clone().unwrap()).unwrap();
@@ -43,7 +44,7 @@ impl Action {
 
                         dialogue_box.notify(&ability.message.replace("{}", &actor_ch.name));
                         dialogue_box.notify(&format!("{} takes a hit!", target_ch.name));
-                        println!("{} health now", &target_ch.health);
+
                     },
                     AbilityType::Status => {
                         let target_ch = enemy_party.characters.iter_mut().find(|ch| ch.name == self.target.clone().unwrap()).unwrap();
@@ -54,7 +55,7 @@ impl Action {
                         let actor_index = friendly_party.characters.iter().position(|ch| ch.name == self.actor).unwrap();
                         let target_index = friendly_party.characters.iter().position(|ch| ch.name == self.target.clone().unwrap()).unwrap();
 
-                        let b = ability.buff.expect("Expected buff variant");
+                        let b = ability.buff.expect("Unexpected buff variant");
 
                         if actor_index == target_index {
 
@@ -98,21 +99,27 @@ impl Action {
                 }
             },
             ActionType::Guard => {
+
                 let actor_ch = friendly_party.characters.iter_mut().find(|ch| ch.name == self.actor).unwrap();
                 actor_ch.state = CharacterState::Guarding;
                 dialogue_box.notify(&format!("{} is guarding!", actor_ch.name));
+
             },
             ActionType::Item => {
+
                 // use_item
                 let actor_ch = friendly_party.characters.iter_mut().find(|ch| ch.name == self.actor).unwrap();
                 actor_ch.state = CharacterState::Default;
                 dialogue_box.notify(&format!("{} used an item!", actor_ch.name));
+
             },
             ActionType::Flee => {
+
                 // flee
                 let actor_ch = friendly_party.characters.iter_mut().find(|ch| ch.name == self.actor).unwrap();
                 actor_ch.state = CharacterState::Default;
                 dialogue_box.notify(&format!("{} is trying to flee!", actor_ch.name));
+
             }
         }
     }
