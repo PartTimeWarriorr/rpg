@@ -113,7 +113,7 @@ impl Party {
             let (left, right) = self.characters.split_at_mut(actor_index);
             (&mut right[0], &mut left[target_index])
         } else {
-            panic!("Can't target myself :((");
+            panic!("How am I targetting myself?");
         }
 
     }

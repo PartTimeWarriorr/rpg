@@ -112,6 +112,25 @@ impl Ui {
         return self.menu.nodes[self.curr_node].data.clone();
     }
 
+    pub fn remove_nodes_with_data(&mut self, to_remove: String) {
+
+        // Get all NodeHandles of nodes with data == to_remove
+        let to_remove_children = self.menu.nodes
+            .iter()
+            .enumerate()
+            .filter(|(_, child)| child.data == to_remove)
+            .map(|(index, _)| index)
+            .collect::<Vec<NodeHandle>>();
+
+        // Remove all to_remove_children from all children vectors they occur in
+        self.menu.nodes
+            .iter_mut()
+            .for_each(|node|
+                node.children.retain(|child| !to_remove_children.contains(child))
+            );
+
+    }
+
 }
 
 impl Drawable for Ui {

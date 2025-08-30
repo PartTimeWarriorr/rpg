@@ -17,7 +17,7 @@
     {
         "name" : "Fireball",
         "ability_type" : "Damage",
-        "power" : 100,
+        "power" : 1500,
         "message" : "{} conjures a ball of fire!"
     },
     {

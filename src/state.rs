@@ -2,7 +2,7 @@ use ggez::{
     context::Has, event, graphics::{self, Canvas, Color, DrawParam, Drawable, Image, Rect}, input::{self, keyboard::KeyCode, }, mint::{Point2, Vector2}, timer::TimeContext, Context, GameError, GameResult
 };
 
-use rand::seq::IndexedRandom;
+use rand::seq::{IndexedRandom, IteratorRandom};
 use crate::ability::*;
 use crate::assets::*;
 use crate::action::*;
@@ -153,6 +153,45 @@ impl MainState {
         )
     }
 
+    fn get_dead_characters(&self) -> Vec<Character> {
+        self.friendly_party.characters
+            .iter()
+            .chain(&self.curr_battle.enemy_party.characters)
+            .filter(|ch| ch.health == 0)
+            .map(|ch| ch.to_owned())
+            .collect()
+    }
+
+    fn cleanup_dead_characters(&mut self) {
+
+        let dead_vec = self.get_dead_characters();
+
+        // Simply remove characters with 0 health
+        self.friendly_party.characters
+            .retain(|ch| ch.health > 0);
+
+        self.curr_battle.enemy_party.characters
+            .retain(|ch| ch.health > 0);
+
+        // Remove action menu nodes with dead character names
+        dead_vec
+            .iter()
+            .for_each(|dead_ch| 
+                self.curr_battle.action_menu.remove_nodes_with_data(dead_ch.name.clone()));
+
+        self.curr_battle.action_menu.load_menu();
+        
+        // Remove dead character ids from bar uis
+        let dead_ids = dead_vec
+            .iter()
+            .map(|ch| ch.id)
+            .collect::<Vec<CharacterId>>();
+
+        self.curr_battle.player_uis
+            .retain(|k, v| !dead_ids.contains(k));
+
+    }
+
     fn update_player_uis(&mut self, _ctx: &mut Context) {
         self.curr_battle.player_uis
             .iter_mut()
@@ -208,8 +247,8 @@ impl MainState {
                         self.curr_battle.action_menu.reset();
                         self.curr_battle.action_menu.load_menu();
                         let complete_action = self.curr_battle.current_action.build(&self.abilities);
+                        self.friendly_party.characters.iter_mut().find(|ch| ch.name == complete_action.actor).unwrap().use_action_points();
                         complete_action.resolve(&mut self.friendly_party, &mut self.curr_battle.enemy_party, &mut self.curr_battle.dialogue_box);
-                        // self.friendly_party.characters.iter_mut().find(|ch| ch.name == complete_action.actor).unwrap().use_action_points();
                         self.curr_battle.action_menu.menu_state = MenuState::ChooseActor;
                     } else if curr_selection == "Item" {
                         self.curr_battle.current_action.action_type(ActionType::Item);
@@ -242,6 +281,7 @@ impl MainState {
                 
                     complete_action.resolve(&mut self.friendly_party, &mut self.curr_battle.enemy_party, &mut self.curr_battle.dialogue_box);
 
+                    self.cleanup_dead_characters();
                     // dbg!(&self.friendly_party.characters.iter().find(|ch| ch.name == "hero"));
                     // dbg!(&self.curr_battle.enemy_party.characters.iter().find(|ch| ch.name == "orc"));
 
@@ -273,6 +313,12 @@ impl MainState {
 
     fn enemy_action(&mut self, _ctx: &mut Context) {
 
+        // Because borrow-checker
+        let enemy_names = self.curr_battle.enemy_party.characters
+            .iter()
+            .map(|ch| ch.name.clone())
+            .collect::<Vec<String>>();
+
         // If an enemy is ready to act
         if let Some(ch) = self.curr_battle.enemy_party.characters.iter_mut().find(|ch| ch.action_points == MAX_ACTION_POINTS) {
             println!("{} the Destroyer", ch.name);
@@ -287,10 +333,19 @@ impl MainState {
 
             let t = match self.abilities.iter().find(|a| a.name == ab).unwrap().ability_type {
                 AbilityType::Damage | AbilityType::Status => {
-                    self.curr_battle.player_names.choose(&mut rng).unwrap()
+                    self.friendly_party.characters
+                        .iter()
+                        .choose(&mut rng)
+                        .unwrap()
+                        .name
+                        .to_owned()
                 },
                 AbilityType::Heal | AbilityType::Buff => {
-                    self.curr_battle.enemy_names.choose(&mut rng).unwrap()
+                    enemy_names
+                        .iter()
+                        .choose(&mut rng)
+                        .unwrap()
+                        .to_owned()
                 }
             };
 
@@ -301,6 +356,9 @@ impl MainState {
                 .target(t.clone())
                 .build(&self.abilities)
                 .resolve(&mut self.curr_battle.enemy_party, &mut self.friendly_party, &mut self.curr_battle.dialogue_box);
+
+
+            self.cleanup_dead_characters();
 
         }
     }

@@ -50,24 +50,50 @@ impl Action {
                         // TODO
                     },
                     AbilityType::Buff => {
-                        // TODO: Fix panic when targeting self
+
                         let actor_index = friendly_party.characters.iter().position(|ch| ch.name == self.actor).unwrap();
                         let target_index = friendly_party.characters.iter().position(|ch| ch.name == self.target.clone().unwrap()).unwrap();
-                        let (actor_ch, target_ch) = friendly_party.get_two_members_mut(actor_index, target_index);
-                        actor_ch.state = CharacterState::Default;
-                        let b = ability.buff.expect("Expected buff variant");
-                        target_ch.buffs.push(b);
 
-                        dialogue_box.notify(&ability.message.replace("{}", &actor_ch.name));
+                        let b = ability.buff.expect("Expected buff variant");
+
+                        if actor_index == target_index {
+
+                            let actor_ch = &mut friendly_party.characters[actor_index];
+                            actor_ch.state = CharacterState::Default;
+                            actor_ch.buffs.push(b);
+
+                            dialogue_box.notify(&ability.message.replace("{}", &actor_ch.name));
+
+                        } else {
+
+                            let (actor_ch, target_ch) = friendly_party.get_two_members_mut(actor_index, target_index);
+                            actor_ch.state = CharacterState::Default;
+                            target_ch.buffs.push(b);
+
+                            dialogue_box.notify(&ability.message.replace("{}", &actor_ch.name));
+
+                        }
                     },
                     AbilityType::Heal => {
-                        // TODO: Fix panic when targeting self
+
                         let actor_index = friendly_party.characters.iter().position(|ch| ch.name == self.actor).unwrap();
                         let target_index = friendly_party.characters.iter().position(|ch| ch.name == self.target.clone().unwrap()).unwrap();
-                        let (actor_ch, target_ch) = friendly_party.get_two_members_mut(actor_index, target_index);
-                        actor_ch.state = CharacterState::Default;
-                        target_ch.heal(ability.power);
-                        dialogue_box.notify(&ability.message.replace("{}", &actor_ch.name));
+
+                        if actor_index == target_index {
+
+                            let actor_ch = &mut friendly_party.characters[actor_index];
+                            actor_ch.state = CharacterState::Default;
+                            actor_ch.heal(ability.power);
+                            dialogue_box.notify(&ability.message.replace("{}", &actor_ch.name));
+
+                        } else {
+
+                            let (actor_ch, target_ch) = friendly_party.get_two_members_mut(actor_index, target_index);
+                            actor_ch.state = CharacterState::Default;
+                            target_ch.heal(ability.power);
+                            dialogue_box.notify(&ability.message.replace("{}", &actor_ch.name));
+
+                        }
                     }
                 }
             },
