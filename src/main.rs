@@ -1,7 +1,7 @@
-// #![allow(clippy::unnecessary_wraps)]
-// #![allow(dead_code)]
-// #![allow(unused_imports)]
-// #![allow(unused_variables)]
+#![allow(clippy::unnecessary_wraps)]
+#![allow(dead_code)]
+#![allow(unused_imports)]
+#![allow(unused_variables)]
 
 use ggez::{
     event,

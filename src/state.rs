@@ -1,5 +1,9 @@
 use ggez::{
-    context::Has, event, graphics::{self, Canvas, Color, DrawParam, Drawable, Image, Rect, Text}, input::{self, keyboard::KeyCode, }, mint::{Point2, Vector2}, timer::TimeContext, Context, GameError, GameResult
+    context::Has, 
+    event, 
+    graphics::{self, Canvas, Color, DrawParam, Drawable, Image, Rect, Text}, 
+    input::{self, keyboard::KeyCode, }, mint::{Point2, Vector2}, 
+    timer::TimeContext, Context, GameError, GameResult
 };
 
 use rand::seq::{IndexedRandom, IteratorRandom};
@@ -11,7 +15,7 @@ use crate::ui::*;
 use crate::characters::*;
 use crate::load::*;
 
-use std::{path, env, hash::RandomState, fs::File, io::BufReader}; 
+use std::{env, fs::File, hash::RandomState, io::BufReader, path, sync::Arc}; 
 
 use ordermap::OrderMap;
 
@@ -189,6 +193,10 @@ impl MainState {
 
         let dead_vec = self.get_dead_characters();
 
+        if dead_vec.is_empty() {
+            return;
+        }
+
         // Simply remove characters with 0 health
         self.friendly_party.characters
             .retain(|ch| ch.health > 0);
@@ -213,6 +221,11 @@ impl MainState {
         self.curr_battle.player_uis
             .retain(|k, v| !dead_ids.contains(k));
 
+
+        // Reset menu when removing characters
+        self.curr_battle.action_menu.reset();
+        self.curr_battle.action_menu.menu_state = MenuState::ChooseActor;
+        self.curr_battle.action_menu.load_menu();
     }
 
     fn friendly_party_died(&self) -> bool {
@@ -368,6 +381,7 @@ impl MainState {
                 .unwrap()
                 .clone();
 
+            // TODO: move back to when enemies are loaded
             // Return error if ability name is unknown
             let valid_ability = match self.abilities.iter().find(|a| a.name == ab) {
                 Some(a) => a.clone(),
@@ -417,8 +431,7 @@ impl MainState {
 impl event::EventHandler<ggez::GameError> for MainState {
     fn update(&mut self, _ctx: &mut Context) -> GameResult {
 
-        match &self.game_state {
-            GameState::BattleState => {
+        match &self.game_state { GameState::BattleState => {
 
 
                 self.friendly_party.update_action_points();
@@ -435,6 +448,17 @@ impl event::EventHandler<ggez::GameError> for MainState {
                     println!("Error on enemy action: {}", err);
                 }
 
+                if _ctx.keyboard.is_key_just_pressed(KeyCode::D) {
+                    self.friendly_party.characters
+                        .iter_mut()
+                        .find(|c| c.name == "hero")
+                        .unwrap()
+                        .take_damage(300);
+
+                    // Always reset menu after removing dead characters
+                    self.cleanup_dead_characters();
+                }
+
                 if self.enemy_party_died() {
                     self.game_state = GameState::WinState;
                 }
@@ -448,6 +472,7 @@ impl event::EventHandler<ggez::GameError> for MainState {
             },
             GameState::WinState => {
 
+                // TODO: if let next battle and then match
                 if _ctx.keyboard.is_key_just_pressed(KeyCode::Return) {
 
                     if self.all_enemies.is_empty() {
@@ -510,4 +535,9 @@ impl event::EventHandler<ggez::GameError> for MainState {
 
         Ok(())
     }
+}
+
+enum Data {
+    A(Ability),
+    B(String)
 }

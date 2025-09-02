@@ -253,7 +253,7 @@ impl DialogueBox {
 
     pub fn new() -> Self {
         DialogueBox { 
-            text_lines: vec![Text::new(TextFragment::new("").color(DEFAULT_COLOR)); 2]
+            text_lines: vec![Text::new(TextFragment::new("").color(DEFAULT_COLOR)); 4]
         }
     }
 

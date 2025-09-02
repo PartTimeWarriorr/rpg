@@ -11,7 +11,7 @@
             "max_health" : 500,
             "attack" : 2,
             "defense" : 3,
-            "speed" : 30
+            "speed" : 2
         }
     },
     {
@@ -27,7 +27,7 @@
             "max_health" : 500,
             "attack" : 2,
             "defense" : 3,
-            "speed" : 30
+            "speed" : 3
         }
     },
     {
@@ -42,7 +42,7 @@
             "max_health" : 500,
             "attack" : 2,
             "defense" : 3,
-            "speed" : 30
+            "speed" : 1
         }
     }
 ]

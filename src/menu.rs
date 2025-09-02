@@ -1,5 +1,7 @@
 pub type NodeHandle = usize;
 
+// TODO: New static menu structure
+
 #[derive(Debug)]
 pub struct Menu {
     pub root: NodeHandle,
