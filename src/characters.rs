@@ -1,7 +1,6 @@
-use std::cmp::{
-    min,
-    max,
-};
+use std::{cmp::{
+    max, min
+}, hash::RandomState};
 
 use ggez::{
     Context,
@@ -14,6 +13,7 @@ use ggez::{
     mint::Point2,
 
 };
+use ordermap::OrderMap;
 
 use crate::{assets::Assets, characters};
 
@@ -53,69 +53,99 @@ pub enum Buff {
     Speed(u32)
 }
 
+type CharacterMap = OrderMap<CharacterId, Character, RandomState>;
 #[derive(Debug)]
 pub struct Party {
-    pub characters: Vec<Character>,
-    pub position: Point2<f32>,
+    pub characters: CharacterMap,
+    // pub items: OrderMap<Item, usize, RandomState>,
 }
 
 impl Party {
 
-    pub fn new(characters : Vec<Character>, position: Point2<f32>) -> Self {
-        Party { characters, position }
+    pub fn new(characters : CharacterMap) -> Self {
+        Party { characters }
     }
 
-    pub fn new_empty(position: Point2<f32>) -> Self {
+    pub fn new_empty() -> Self {
         Party {
-            characters: Vec::new(),
-            position
+            characters: CharacterMap::new(),
         }
     }
 
     pub fn add_member(&mut self, new_character: Character) {
-        self.characters.push(new_character);
+        self.characters.insert(new_character.id, new_character);
     }
 
     pub fn update_action_points(&mut self) {
-        for ch in &mut self.characters {
-            ch.update_action_points();
+        for ch in self.characters.values_mut() {
+            ch.update_action_points(); 
         }
     }
 
-    pub fn draw(&self, ctx : &Context, canvas: &mut graphics::Canvas, assets: &Assets) {
+    // pub fn draw(&self, ctx : &Context, canvas: &mut graphics::Canvas, assets: &Assets) {
 
-        let mut curr_position = self.position;
+    //     let mut curr_position = self.position;
 
-        for c in &self.characters {
-            c.draw(ctx, canvas, assets, curr_position);
-            curr_position = Point2::from_slice(&[curr_position.x, curr_position.y + 50.0]);
-        }
+    //     for c in &self.characters {
+    //         c.draw(ctx, canvas, assets, curr_position);
+    //         curr_position = Point2::from_slice(&[curr_position.x, curr_position.y + 50.0]);
+    //     }
+    // }
+
+    // pub fn get_member_by_id(&self, character_id: CharacterId) -> Character {
+    //     if let Some(character) = self.characters.iter().find(|c| c.id == character_id) {
+    //         character.clone()
+    //     } else {
+    //         panic!("No character with id {} found!", character_id);
+    //     }
+    // }
+    pub fn get_member_by_id(&self, character_id: CharacterId) -> Option<&Character> {
+        self.characters.get(&character_id)
     }
 
-    pub fn get_member_by_id(&self, character_id: CharacterId) -> Character {
-        if let Some(character) = self.characters.iter().find(|c| c.id == character_id) {
-            character.clone()
-        } else {
-            panic!("No character with id {} found!", character_id);
-        }
-    }
-
+    // pub fn is_character_name(&self, name: &String) -> bool {
+    //     self.characters.iter().any(|ch| ch.name == *name)
+    // }
     pub fn is_character_name(&self, name: &String) -> bool {
-        self.characters.iter().any(|ch| ch.name == *name)
+        self.characters.values().any(|ch| ch.name == *name)
     }
 
-    pub fn get_two_members_mut(&mut self, actor_index: usize, target_index: usize) -> (&mut Character, &mut Character) {
+    // pub fn get_two_members_mut(&mut self, actor_index: usize, target_index: usize) -> (&mut Character, &mut Character) {
 
-        if actor_index < target_index {
-            let (left, right) = self.characters.split_at_mut(target_index);
-            (&mut left[actor_index], &mut right[0])
-        } else if actor_index > target_index {
-            let (left, right) = self.characters.split_at_mut(actor_index);
-            (&mut right[0], &mut left[target_index])
-        } else {
-            panic!("How am I targetting myself?");
-        }
+    //     if actor_index < target_index {
+    //         let (left, right) = self.characters.split_at_mut(target_index);
+    //         (&mut left[actor_index], &mut right[0])
+    //     } else if actor_index > target_index {
+    //         let (left, right) = self.characters.split_at_mut(actor_index);
+    //         (&mut right[0], &mut left[target_index])
+    //     } else {
+    //         panic!("How am I targetting myself?");
+    //     }
 
+    // }
+
+    pub fn get_two_mut(&mut self, actor_index: CharacterId, target_index: CharacterId) -> [Option<&mut Character>; 2] {
+        self.characters.get_disjoint_mut([&actor_index, &target_index])
+    }
+}
+
+
+impl<'de> Deserialize<'de> for Party {
+
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+        where
+            D: serde::Deserializer<'de> {
+                
+        let raw = Vec::<Character>::deserialize(deserializer)?;
+
+        Ok(
+            Party { 
+                characters: raw
+                    .into_iter()
+                    .map(|c| (c.id, c))
+                    .collect::<CharacterMap>()
+            } 
+        )
     }
 }
 

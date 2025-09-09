@@ -1,11 +1,11 @@
-[
-    {
+{
+    "0" : {
         "name" : "Swing",
         "ability_type" : "Damage",
         "power" : 40,
         "message" : "{} flails their arms angrily!"
     },
-    {
+    "1" : {
         "name" : "Enrage",
         "ability_type" : "Buff",
         "power" : 40,
@@ -14,19 +14,19 @@
         },
         "message" : "{} riles up their allies!"
     },
-    {
+    "2" : {
         "name" : "Fireball",
         "ability_type" : "Damage",
         "power" : 1500,
         "message" : "{} conjures a ball of fire!"
     },
-    {
+    "3" : {
         "name" : "Cleave",
         "ability_type" : "Damage",
         "power" : 80,
         "message" : "{} swings their axe!"
     },
-    {
+    "4" : {
         "name" : "Epic Buff",
         "ability_type" : "Buff",
         "power" : 10,
@@ -35,10 +35,10 @@
         },
         "message" : "{} powers up their allies!"
     },
-    {
+    "5" : {
         "name" : "Flash Heal",
         "ability_type" : "Heal",
         "power" : 60,
         "message" : "{} whips up a quick heal!"
     }
-]
+}

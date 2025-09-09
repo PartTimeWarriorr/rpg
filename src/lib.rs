@@ -9,3 +9,4 @@ pub mod ability;
 pub mod action;
 pub mod load;
 pub mod state;
+pub mod static_menu;
