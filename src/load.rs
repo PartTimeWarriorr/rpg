@@ -9,22 +9,30 @@ use std::{
     error::Error,
 };
 
-pub fn load_friendly_party() -> Result<Party, Box<dyn Error>> {
+pub fn load_friendly_party(abilites: &AbilityMap) -> Result<Party, Box<dyn Error>> {
     let file = File::open("config/friendly_party.json")?;
     let rdr = BufReader::new(file);
 
-    let party = serde_json::from_reader(rdr)?;
+    let party : Party = serde_json::from_reader(rdr)?;
 
-    Ok(party)
+    if party.characters.values().any(|ch| !ch.is_valid(abilites)) {
+        Err(format!("Unknown ability when loading friendly party").into())
+    } else {
+        Ok(party)
+    }
 }
 
-pub fn load_enemies() ->  Result<Vec<Vec<Character>>, Box<dyn Error>> {
+pub fn load_enemies(abilites: &AbilityMap) ->  Result<Vec<Vec<Character>>, Box<dyn Error>> {
     let file = File::open("config/enemies.json")?;
     let rdr = BufReader::new(file);
 
-    let en = serde_json::from_reader(rdr)?;
+    let en : Vec<Vec<Character>> = serde_json::from_reader(rdr)?;
 
-    Ok(en)
+    if en.iter().flatten().any(|ch| !ch.is_valid(&abilites)) {
+        Err(format!("Unknown ability when loading enemy party").into())
+    } else {
+        Ok(en)
+    }
 }
 
 

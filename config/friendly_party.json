@@ -3,7 +3,7 @@
         "id" : 0,
         "name" : "hero",
         "abilities" : [
-            "Fireball"
+            "fireball"
         ],
         "sprite" : "char_1",
         "is_friendly" : true,
@@ -18,8 +18,8 @@
         "id" : 1,
         "name" : "hero_2",
         "abilities" : [
-            "Epic Buff",
-            "Flash Heal"
+            "epic_buff",
+            "flash_heal"
         ],
         "sprite" : "char_2",
         "is_friendly" : true,
@@ -34,7 +34,7 @@
         "id" : 2,
         "name" : "hero_3",
         "abilities" : [
-            "Cleave"
+            "cleave"
         ],
         "sprite" : "char_3",
         "is_friendly" : true,

@@ -1,6 +1,6 @@
 use std::{cmp::{
     max, min
-}, hash::RandomState};
+}, error::Error, hash::RandomState};
 
 use ggez::{
     Context,
@@ -15,7 +15,7 @@ use ggez::{
 };
 use ordermap::OrderMap;
 
-use crate::{assets::Assets, characters};
+use crate::{assets::Assets, characters, state::AbilityMap};
 
 use serde::Deserialize;
 
@@ -207,20 +207,45 @@ pub struct Character {
 
 
 impl Character {
-    pub fn new(id: CharacterId, name: &str, abilities: Vec<String>, sprite: &str, stats: Stats) -> Self {
-        Character {
-            id,
-            name: String::from(name), 
-            state: CharacterState::Default,
-            abilities,
-            sprite: String::from(sprite), 
-            is_friendly: true,
-            stats,
-            action_points: 0,
-            health: stats.max_health,
-            buffs: vec![],
+    pub fn new(
+        loaded_abilities: AbilityMap, 
+        id: CharacterId, 
+        name: String, 
+        abilities: Vec<String>, 
+        sprite: String, 
+        is_friendly: bool, 
+        stats: Stats, 
+        action_points: u32) -> Result<Self, Box<dyn Error>> {
+
+        if abilities.iter().any(|ab| !loaded_abilities.contains_key(ab)) {
+            Err(format!("Unknown ability name when loading character: {}", name).into())
+        } else {
+
+            Ok(
+                Character {
+                    id,
+                    name,
+                    state: CharacterState::Default,
+                    abilities,
+                    sprite,
+                    is_friendly,
+                    stats,
+                    action_points,
+                    health: stats.max_health,
+                    buffs: vec![]
+                }
+            )
         }
+
+    } 
+
+    pub fn is_valid(&self, loaded_abilities: &AbilityMap) -> bool {
+        self.abilities.iter().all(|ab_name| loaded_abilities.contains_key(ab_name))
     }
+
+    // pub fn validate(&self, loaded_abilities: &AbilityMap) -> Result<(), Box<dyn Error>> {
+    //     self.abilities.iter().filter(|)
+    // }
 
     pub fn update(&mut self) {
         self.update_action_points(); 

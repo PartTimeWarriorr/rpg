@@ -5,7 +5,7 @@
             "name" : "orc",
             "state" : "Default",
             "abilities" : [
-                "Swing"
+                "swing"
             ],
             "sprite" : "enem_1",
             "is_friendly" : false,
@@ -21,7 +21,7 @@
             "name" : "orc_2",
             "state" : "Default",
             "abilities" : [
-                "Swing"
+                "swing"
             ],
             "sprite" : "enem_2",
             "is_friendly" : false,
@@ -39,7 +39,7 @@
             "name" : "epic_orc",
             "state" : "Default",
             "abilities" : [
-                "Enrage"
+                "enrage"
             ],
             "sprite" : "enem_2",
             "is_friendly" : false,

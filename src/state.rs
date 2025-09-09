@@ -115,7 +115,7 @@ enum GameState {
     // }
 // }
 
-type AbilityId = usize;
+type AbilityId = String;
 pub type AbilityMap = HashMap<AbilityId, Ability, RandomState>;
 
 impl fmt::Debug for MainState {
@@ -146,10 +146,27 @@ const ENEMY_PARTY_POSITION : Point2<f32> = Point2 { x : 400.0, y: 200.0};
 impl MainState {
     pub fn new(ctx: &mut Context) -> GameResult<MainState> {
 
-        let abilities = load_abilities().unwrap();
-        let mut all_enemies = load_enemies().unwrap(); 
-        // let friendly_party = Party::new(load_friendly_party(), FRIENDLY_PARTY_POSITION);
-        let friendly_party = load_friendly_party().unwrap();
+        let abilities = match load_abilities() {
+            Ok(ab) => ab,
+            Err(err) => {
+                eprintln!("Error loading abilities: {}", err);
+                AbilityMap::new()
+            }
+        };
+
+        let mut all_enemies = match load_enemies(&abilities) {
+            Ok(all_e) => all_e,
+            Err(err) => {
+                panic!("Error loading enemies: {}", err);
+            }
+        };
+
+        let friendly_party = match load_friendly_party(&abilities) {
+            Ok(fp) => fp,
+            Err(err) => {
+                panic!("Error loading friendly party: {}", err);
+            }
+        };
 
         // let player_abilities = friendly_party.characters
         //     .iter()
